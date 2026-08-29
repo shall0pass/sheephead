@@ -487,61 +487,71 @@ Deleted vs the Clabber tree: `src/lib/clabber/` (renamed), `meld.ts` +
 Each phase ends green: `npm run lint`, `npm run check`, `npm test`,
 `npm run build`.
 
+**Status — all phases complete (branch `sheephead-rework`).** Commits:
+A `292edc8`, B–E `52e8ba5`, F `bb1d137`, G `2dd8b0d`, H `7ef1193`. Every
+commit passed `lint` / `check` / `test` / `build`; the suite is at 106 tests
+(19 files).
+
 **As built:** Phase A shipped on its own; Phases B–E landed as one
 "rules engine" commit (the Clabber modules shared `types.ts` / `cards.ts` too
 tightly to split further while keeping tests green), with the in‑game UI
 reduced to a placeholder in the interim. Phases F, G and H then shipped
-separately. The full‑game Playwright E2E in Phase G is deferred — the
-five‑bot simulation (`simulate.spec.ts`) plus the chromium `host.svelte.spec`
-game‑to‑completion test cover the engine/host path, and the panels have
-component tests; a scripted one‑human UI run is still worth adding.
+separately.
 
-### Phase A — Rename & re‑brand (mechanical, logic unchanged)
+**Still open:** the full‑game **Playwright E2E** from Phase G (one scripted
+human + four bots through the real UI) — the five‑bot `simulate.spec.ts` plus
+the chromium `host.svelte.spec` game‑to‑completion test cover the engine/host
+path and the panels have component tests, but a browser run of the actual
+`Table` flow is not yet automated. A live `docker compose up` /
+`wrangler pages dev` smoke test has also not been re‑run since the rename
+(the env‑var wiring is confirmed by inspection). These are Phase I below.
 
-- [ ] `git mv src/lib/clabber src/lib/sheephead`; update every import path and
+### Phase A — Rename & re‑brand — ✅ done (`292edc8`)
+
+- [x] `git mv src/lib/clabber src/lib/sheephead`; update every import path and
       the `src/lib/sheephead/index.ts` barrel.
-- [ ] `package.json` `"name": "clabber"` → `"sheephead"`; sync‑server package
+- [x] `package.json` `"name": "clabber"` → `"sheephead"`; sync‑server package
       name likewise.
-- [ ] Env var `CLABBER_SYNC_URL` → `SHEEPHEAD_SYNC_URL` in `docker-compose.yml`
+- [x] Env var `CLABBER_SYNC_URL` → `SHEEPHEAD_SYNC_URL` in `docker-compose.yml`
       / docs (`PUBLIC_SYNC_URL` itself is unchanged).
-- [ ] PWA: `static/manifest.webmanifest` `name`/`short_name` → "Sheephead";
+- [x] PWA: `static/manifest.webmanifest` `name`/`short_name` → "Sheephead";
       `src/app.html` title; keep the green theme. Artwork can stay for now
       (Ace‑of‑Spades on felt is still on‑theme) — regenerate icons only if the
       stakeholder wants new art.
-- [ ] `window.__clabber` dev handle → `window.__sheephead`.
-- [ ] `docs/deploy-cloudflare.md`, `README.md`, `CLAUDE.md` wording sweep
+- [x] `window.__clabber` dev handle → `window.__sheephead`.
+- [x] `docs/deploy-cloudflare.md`, `README.md`, `CLAUDE.md` wording sweep
       (and fold in §3.5).
-- [ ] Green gate with the still‑Clabber logic compiling under the new names.
+- [x] Green gate with the still‑Clabber logic compiling under the new names.
 
-### Phase B — Deck & deal
+### Phase B — Deck & deal — ✅ done (in `52e8ba5`)
 
-- [ ] `cards.ts` — 32‑card deck, trump = Q/J/♦ (14), fail suits `S H C` only,
+- [x] `cards.ts` — 32‑card deck, trump = Q/J/♦ (14), fail suits `S H C` only,
       the trump/fail orderings and point values from §5, `suitOf`, no
       last‑trick bonus. Rewrite `cards.spec.ts` (120 points total; trump order;
       `QC` is trump not a club; `AD`/`TD` are trump; fail order `A T K 9 8 7`).
-- [ ] `deal.ts` — 6 each as 3+3, 2‑card `blind`. `deal.spec.ts`: 5×6 + 2 = 32,
+- [x] `deal.ts` — 6 each as 3+3, 2‑card `blind`. `deal.spec.ts`: 5×6 + 2 = 32,
       no duplicates, deterministic per seed.
-- [ ] Update the `/dev` gallery to 32 cards.
+- [x] Update the `/dev` gallery to 32 cards.
 
-### Phase C — Picking, bury, call‑partner (no trick play yet)
+### Phase C — Picking, bury, call‑partner — ✅ done (in `52e8ba5`)
 
-- [ ] `picking.ts` — `legalPickActions`, eldest→dealer order, `applyPick`
+- [x] `picking.ts` — `legalPickActions`, eldest→dealer order, `applyPick`
       (blind into hand, `phase='bury'`), all‑pass → `redeal`.
-- [ ] `bury.ts` — `legalBury`, `applyBury` (2 distinct held cards → `buried`,
+- [x] `bury.ts` — `legalBury`, `applyBury` (2 distinct held cards → `buried`,
       `phase='callPartner'`).
-- [ ] `partner.ts` — `legalCalls` incl. the three rules‑doc edge cases,
+- [x] `partner.ts` — `legalCalls` incl. the three rules‑doc edge cases,
       `resolvePartner`, `alone`; `phase='trick'` on completion.
-- [ ] `actions.ts` / `reducer.ts` — new action union; `StartHand` covers first
+- [x] `actions.ts` / `reducer.ts` — new action union; `StartHand` covers first
       deal + next hand + re‑deal.
-- [ ] Tests: pick/pass ordering, blind pickup, all‑pass re‑deal keeps the
+- [x] Tests: pick/pass ordering, blind pickup, all‑pass re‑deal keeps the
       dealer, bury validation, buried points attributed to the picker's team,
       legal‑call enumeration (normal; only‑aces → under; all‑three‑aces → ten;
       no‑fail → trump under), partner resolves to the ace holder, alone leaves
       `partnerSeat` null.
 
-### Phase D — Trick play
+### Phase D — Trick play — ✅ done (in `52e8ba5`)
 
-- [ ] `play.ts` — trick 1 led by `dealer + 1`; `legalMoves` (follow led suit;
+- [x] `play.ts` — trick 1 led by `dealer + 1`; `legalMoves` (follow led suit;
       trump is one suit; free when void; **no** forced trump‑in, **no**
       overtrump); called‑ace constraints (partner must play the called ace on
       the first lead of its suit and can't slough it elsewhere; picker keeps a
@@ -550,84 +560,98 @@ component tests; a scripted one‑human UI run is still worth adding.
       trick winner, never contests); `applyPlay`, `resolveTrick` (highest trump
       else highest of led fail, no last‑trick bonus), winner leads next, 6
       tricks.
-- [ ] Tests: trick‑1 leader is the dealer's left, not the picker; follow‑suit;
+- [x] Tests: trick‑1 leader is the dealer's left, not the picker; follow‑suit;
       trump‑led forces trump if able; void → any card; Queen/Jack are trump
       regardless of pip suit; trick winner with and without trump; called ace
       forced on suit lead and rejected as an off‑suit discard; picker can't dump
       the called fail card early; both bindings free on the last trick; `under`
       card doesn't win the trick.
 
-### Phase E — Scoring & game end
+### Phase E — Scoring & game end — ✅ done (in `52e8ba5`)
 
-- [ ] `score.ts` — `pickerPoints` (tricks + buried), the §5 classification order
+- [x] `score.ts` — `pickerPoints` (tricks + buried), the §5 classification order
       (all‑6 / zero‑tricks first, then points ≥ 90 / ≥ 61 / ≤ 30 / 31–60), the
       §6 award table, zero‑sum assert, `HandResult`, `score.tally`,
       `checkGameEnd` after `handsToPlay`, `winners` = positive tallies.
-- [ ] Tests, one named per rules‑doc scoring clause: 61 win (2/1/−1), schneider
+- [x] Tests, one named per rules‑doc scoring clause: 61 win (2/1/−1), schneider
       at picker ≥ 90 / opp ≤ 30 (4/2/−2), no‑tricker = picker won all 6 (6/3/−3),
       picker loss 31–60 (−2/−1/+1), picker schneidered ≤ 30 (−4/−2/+2),
       opponents won all 6 (−9/0/+3), and the alone column (±4/±8/±12 vs
       ∓1/∓2/∓3). Boundary tests at picker = 30, 31, 60, 61, 89, 90. A
       zero‑trick picker who buried a King still scores it as `oppPoints = 116`,
       not 120. Every row sums to 0.
-- [ ] `simulate.ts` + `simulate.spec.ts` — fuzz ~40 full 5‑bot games: each
+- [x] `simulate.ts` + `simulate.spec.ts` — fuzz ~40 full 5‑bot games: each
       terminates at `gameOver` after `handsToPlay`, every hand conserves 120
       card points, no illegal move is ever produced, `tally` always sums to 0,
       results are deterministic per seed.
-- [ ] `automerge-compat.spec.ts` — `reduce` runs inside `Automerge.change()`
+- [x] `automerge-compat.spec.ts` — `reduce` runs inside `Automerge.change()`
       and two peers converge through a full hand.
 
-### Phase F — Host & bots
+### Phase F — Host & bots — ✅ done (`bb1d137`)
 
-- [ ] `bot.ts` — `choosePick` / `chooseBury` / `chooseCall` / `chooseCard`
+- [x] `bot.ts` — `choosePick` / `chooseBury` / `chooseCall` / `chooseCard`
       per §6.
-- [ ] `sheephead/host.ts` — `pickHost` unchanged; `nextBotAction` extended to
+- [x] `sheephead/host.ts` — `pickHost` unchanged; `nextBotAction` extended to
       emit pick/pass, bury, call and card moves, and to auto‑`StartHand` from
       `redeal` / `handScored`.
-- [ ] `repo/host.ts` — no structural change; verify the humanising delays and
+- [x] `repo/host.ts` — no structural change; verify the humanising delays and
       the presence/absent‑player reconciler still hold with 5 seats and the new
       phases.
-- [ ] Tests: `host.spec.ts` (`pickHost`, `HostClaim`, `nextBotAction` per phase,
+- [x] Tests: `host.spec.ts` (`pickHost`, `HostClaim`, `nextBotAction` per phase,
       five bots driving a full game to `gameOver`); `host.svelte.spec.ts`
       (chromium — claims the role, drives bots off the lobby, stands down for a
       live foreign host, takes over a stale host mid‑hand and finishes).
 
-### Phase G — Table & play UI
+### Phase G — Table & play UI — ✅ done (`2dd8b0d`), E2E deferred
 
-- [ ] `Table.svelte` rebuilt for 5 seats; `PlayerPlate` gains picker badge +
+- [x] `Table.svelte` rebuilt for 5 seats; `PlayerPlate` gains picker badge +
       gated partner highlight; `CardFan` unchanged.
-- [ ] `TrickArea.svelte` — 5 plays, trump badge, called‑card badge, no meld.
-- [ ] `MyHand.svelte` — 6 (or 8 mid‑bury) cards, trump‑first sort, legal gating,
+- [x] `TrickArea.svelte` — 5 plays, trump badge, called‑card badge, no meld.
+- [x] `MyHand.svelte` — 6 (or 8 mid‑bury) cards, trump‑first sort, legal gating,
       one‑card‑at‑a‑time, focus management.
-- [ ] New `PickPanel.svelte` / `BuryPanel.svelte` / `CallPartnerPanel.svelte`;
+- [x] New `PickPanel.svelte` / `BuryPanel.svelte` / `CallPartnerPanel.svelte`;
       delete `BiddingPanel.svelte` + `MeldPanel.svelte` (+ specs).
-- [ ] `Scoreboard.svelte` — per‑seat tally, hand counter, `handScored` modal
+- [x] `Scoreboard.svelte` — per‑seat tally, hand counter, `handScored` modal
       with the new breakdown.
-- [ ] `+page.svelte` phase switch updated; `?fast` dev flag keeps shrinking bot
+- [x] `+page.svelte` phase switch updated; `?fast` dev flag keeps shrinking bot
       delays.
-- [ ] Tests: `sortHand` (trump‑first for the Sheephead trump set),
-      `MyHand.svelte` legal gating + click, `Scoreboard` breakdown render, plus
-      a full‑game Playwright E2E — one Playwright‑driven human + four
-      host‑driven bots play a complete game through the real UI
-      (picking → bury → call → trick play → hand scoring → next hand → game
-      over).
+- [x] Tests: `sortHand` (trump‑first for the Sheephead trump set, in
+      `cards.spec.ts`), `MyHand.svelte` legal gating + bury toggle,
+      `Scoreboard` strip + breakdown modal, `GameOver` win/loss/spectator.
+- [ ] **Deferred to Phase I:** a full‑game Playwright E2E — one
+      Playwright‑driven human + four host‑driven bots play a complete game
+      through the real UI (picking → bury → call → trick play → hand scoring →
+      next hand → game over).
 
-### Phase H — Win / lose & polish
+### Phase H — Win ∕ lose & polish — ✅ done (`7ef1193`)
 
-- [ ] `GameOver.svelte` — fireworks for `tally > 0` / spectators, tears +
+- [x] `GameOver.svelte` — fireworks for `tally > 0` / spectators, tears +
       desaturation for `tally < 0`; "Play again" → `ResetToLobby` (zero the
       tally + hand counter, keep seats/names/code).
-- [ ] `prefers-reduced-motion` fallbacks (carried over).
-- [ ] Responsive table re‑checked at 390 px with 5 seats (no horizontal
+- [x] `prefers-reduced-motion` fallbacks (carried over).
+- [x] Responsive table re‑checked at 390 px with 5 seats (no horizontal
       overflow); `uiScale` clamp retuned if needed.
-- [ ] a11y: `aria-live` announcements reworded for "your turn to pick / bury /
+- [x] a11y: `aria-live` announcements reworded for "your turn to pick / bury /
       call / play", the hand result, and the game result.
-- [ ] `LogFeed.svelte` wording for the new events (picked, buried 2, called
+- [x] `LogFeed.svelte` wording for the new events (picked, buried 2, called
       A♥, went alone, took the trick, set!).
-- [ ] `ChatBox.svelte` unchanged.
-- [ ] Deploy docs (`docs/deploy-cloudflare.md`, Docker section) re‑verified with
-      the renamed env var; `docker compose up --build` and `wrangler pages dev`
-      smoke‑tested.
+- [x] `ChatBox.svelte` restored (its name‑tint no longer keys off fixed
+      teams, which Sheephead doesn't have).
+- [x] Deploy docs / `docker-compose.yml` env‑var wiring confirmed by
+      inspection (`PUBLIC_SYNC_URL` unchanged, `CLABBER_SYNC_URL` →
+      `SHEEPHEAD_SYNC_URL`).
+- [ ] **Deferred to Phase I:** an actual `docker compose up --build` /
+      `wrangler pages dev` smoke run since the rename.
+
+### Phase I — E2E & deploy verification (open)
+
+- [ ] Full‑game Playwright E2E through the real `Table` UI: one scripted human + four host bots, from the join screen to `gameOver`, asserting the
+      phase transitions and a zero‑sum final tally. Reuse the deleted Clabber
+      E2E as a starting point (`git show 292edc8~1 -- <old e2e path>`).
+- [ ] `docker compose up --build` — web on `:8080`, sync on `:3030`; create a
+      game in one browser, join by code in another, deal, watch bots play.
+- [ ] `wrangler pages dev` against the public relay — same smoke path.
+- [ ] Update `docs/deploy-cloudflare.md` if anything drifted.
 
 ---
 
