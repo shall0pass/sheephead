@@ -1,14 +1,28 @@
-// Seat/team helpers and the initial document.
+// Seat helpers and the initial document.
 
-import type { GameDoc, Seat, TeamId } from './types';
+import type { GameDoc, Seat } from './types';
 
-export const SEATS: readonly Seat[] = [0, 1, 2, 3];
+export const SEATS: readonly Seat[] = [0, 1, 2, 3, 4];
+export const NUM_SEATS = 5;
 
-export const nextSeat = (s: Seat): Seat => ((s + 1) % 4) as Seat;
-export const partnerSeat = (s: Seat): Seat => ((s + 2) % 4) as Seat;
-export const teamOf = (s: Seat): TeamId => (s % 2) as TeamId;
-export const otherTeam = (t: TeamId): TeamId => (t ^ 1) as TeamId;
-export const seatsOfTeam = (t: TeamId): [Seat, Seat] => (t === 0 ? [0, 2] : [1, 3]);
+export const nextSeat = (s: Seat): Seat => ((s + 1) % NUM_SEATS) as Seat;
+export const prevSeat = (s: Seat): Seat => ((s + NUM_SEATS - 1) % NUM_SEATS) as Seat;
+/** The eldest hand — the player to the dealer's left — who picks first and
+ *  leads the first trick. */
+export const eldest = (dealer: Seat): Seat => nextSeat(dealer);
+
+/** The seats on the picker's team: the picker plus the (resolved) partner, or
+ *  just the picker when alone. Empty in the lobby / on a re-deal. */
+export function pickerTeamSeats(doc: GameDoc): Seat[] {
+	if (doc.picker == null) return [];
+	const team: Seat[] = [doc.picker];
+	if (doc.partnerSeat != null && doc.partnerSeat !== doc.picker) team.push(doc.partnerSeat);
+	return team;
+}
+
+export function isPickerTeam(doc: GameDoc, seat: Seat): boolean {
+	return pickerTeamSeats(doc).includes(seat);
+}
 
 export function createGame(code: string, now: number = Date.now()): GameDoc {
 	return {
@@ -16,28 +30,26 @@ export function createGame(code: string, now: number = Date.now()): GameDoc {
 		code,
 		createdAt: now,
 		hostActorId: '',
-		players: [null, null, null, null],
+		players: [null, null, null, null, null],
 		phase: 'lobby',
-		advanced: false,
 		dealer: 0,
 		seed: '',
-		hands: [[], [], [], []],
-		upCard: null,
-		trump: null,
-		maker: null,
-		bidding: null,
+		handNumber: 0,
+		handsToPlay: 10,
+		hands: [[], [], [], [], []],
+		blind: [],
+		picking: null,
+		picker: null,
+		buried: [],
+		call: null,
+		calledCard: null,
+		partnerSeat: null,
+		partnerRevealed: false,
 		trick: null,
-		wonBySeat: [[], [], [], []],
+		tricksWon: [[], [], [], [], []],
 		lastTrickWinner: null,
-		melds: {
-			declared: [null, null, null, null],
-			resolved: false,
-			scoredTeam: null,
-			points: [0, 0]
-		},
-		renege: null,
-		score: { running: [0, 0], hands: [] },
-		winner: null,
+		score: { tally: [0, 0, 0, 0, 0], hands: [] },
+		winners: null,
 		log: [],
 		chat: []
 	};

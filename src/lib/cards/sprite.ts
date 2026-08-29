@@ -21,7 +21,7 @@ export const FACE_GRID = { cols: 13, rows: 4 } as const;
 /** width / height — the same for the faces and the back. */
 export const CARD_RATIO = 64 / 89;
 
-const RANK_COL: Record<Rank, number> = { A: 0, '9': 8, T: 9, J: 10, Q: 11, K: 12 };
+const RANK_COL: Record<Rank, number> = { A: 0, '7': 6, '8': 7, '9': 8, T: 9, J: 10, Q: 11, K: 12 };
 const SUIT_ROW: Record<Suit, number> = { C: 0, H: 1, S: 2, D: 3 };
 
 export function facePosition(card: Card): { col: number; row: number } {

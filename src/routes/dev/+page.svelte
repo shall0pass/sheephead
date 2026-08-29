@@ -9,7 +9,7 @@
 		{ id: 'D', name: 'Diamonds' },
 		{ id: 'C', name: 'Clubs' }
 	];
-	const RANKS: Rank[] = ['A', 'K', 'Q', 'J', 'T', '9'];
+	const RANKS: Rank[] = ['A', 'T', 'K', 'Q', 'J', '9', '8', '7'];
 
 	let height = $state(120);
 </script>
@@ -23,7 +23,7 @@
 			{Math.round(height)}px
 		</label>
 
-		<p>The 24 cards used in Sheephead (A K Q J 10 9 of each suit):</p>
+		<p>The 32 cards used in Sheephead (A 10 K Q J 9 8 7 of each suit):</p>
 		{#each SUITS as suit (suit.id)}
 			<section>
 				<h2>{suit.name}</h2>

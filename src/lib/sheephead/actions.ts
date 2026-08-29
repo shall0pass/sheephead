@@ -1,26 +1,26 @@
 // Every mutation to a `GameDoc` goes through `reduce` as one of these actions.
 
-import type { Bid, Card, Seat } from './types';
+import type { Card, Seat, Suit } from './types';
+
+/** The payload of a `CallPartner` action: a normal called suit, an `under`
+ *  (with the face-down hole card), or going alone. */
+export type CallPayload =
+	{ suit: Suit } | { under: true; suit: Suit; hole: Card } | { alone: true };
 
 export type Action =
 	| { type: 'JoinSeat'; seat: Seat; name: string; actorId?: string }
 	| { type: 'LeaveSeat'; seat: Seat }
 	| { type: 'RenameSeat'; seat: Seat; name: string }
 	| { type: 'SetBot'; seat: Seat; isBot: boolean; botName?: string }
-	/** Turn Advanced (renege) mode on or off. Only allowed in the lobby — once a
-	 *  hand is dealt the setting is frozen for the rest of the game. */
-	| { type: 'SetAdvanced'; on: boolean }
 	/** Deal the next hand. From `handScored` the deal advances to the next
-	 *  dealer; from `redeal` (or the first hand) it keeps the current dealer. */
+	 *  dealer and the hand counter; from `redeal` (or the first hand) it keeps
+	 *  the current dealer and does not advance the counter. */
 	| { type: 'StartHand'; seed: string }
-	| { type: 'Bid'; seat: Seat; bid: Bid }
-	| { type: 'AnnounceMeld'; seat: Seat }
-	/** `allowIllegal` (Advanced mode) lets the seat play a card that breaks the
-	 *  rules of following/trumping — that ends the hand as a renege. */
-	| { type: 'PlayCard'; seat: Seat; card: Card; allowIllegal?: boolean }
-	/** Collect a completed trick and move on (from phase `trickDone`). The host
-	 *  fires this after a short pause so every client sees all four cards. */
-	| { type: 'AdvanceTrick' }
+	| { type: 'Pick'; seat: Seat }
+	| { type: 'Pass'; seat: Seat }
+	| { type: 'Bury'; seat: Seat; cards: [Card, Card] }
+	| { type: 'CallPartner'; seat: Seat; call: CallPayload }
+	| { type: 'PlayCard'; seat: Seat; card: Card }
 	/** Claim the "bot runner" role. Which client should claim (and when) is
 	 *  decided client-side; the reducer just records the winner. */
 	| { type: 'HostClaim'; actorId: string }

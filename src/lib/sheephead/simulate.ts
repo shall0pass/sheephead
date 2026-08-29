@@ -1,8 +1,8 @@
-// Play a whole game with four bots. Used by the test suite to fuzz the rules
+// Play a whole game with five bots. Used by the test suite to fuzz the rules
 // engine and assert invariants over many random deals.
 
 import type { GameDoc, Seat } from './types';
-import { chooseBid, chooseCard } from './bot';
+import { chooseBury, chooseCall, chooseCard, choosePick } from './bot';
 import { legalMoves } from './play';
 import { makeRng, randomSeed } from './rng';
 import { reduce } from './reducer';
@@ -30,25 +30,24 @@ export function playRandomGame(seed: string, maxSteps = 200_000): SimResult {
 
 function step(doc: GameDoc, nextSeed: () => string): void {
 	switch (doc.phase) {
-		case 'bid1':
-		case 'bid2': {
-			const seat = doc.bidding!.turn;
-			reduce(doc, { type: 'Bid', seat, bid: chooseBid(doc, seat) });
+		case 'picking': {
+			const seat = doc.picking!.turn;
+			reduce(doc, choosePick(doc, seat) ? { type: 'Pick', seat } : { type: 'Pass', seat });
 			return;
 		}
-		case 'meld':
+		case 'bury': {
+			reduce(doc, { type: 'Bury', seat: doc.picker!, cards: chooseBury(doc) });
+			return;
+		}
+		case 'callPartner': {
+			reduce(doc, { type: 'CallPartner', seat: doc.picker!, call: chooseCall(doc) });
+			return;
+		}
 		case 'trick': {
 			const seat = doc.trick!.turn;
-			if (doc.phase === 'meld' && doc.melds.declared[seat] == null) {
-				reduce(doc, { type: 'AnnounceMeld', seat });
-			}
 			const card = chooseCard(doc, seat);
 			assertLegal(doc, seat, card);
 			reduce(doc, { type: 'PlayCard', seat, card });
-			return;
-		}
-		case 'trickDone': {
-			reduce(doc, { type: 'AdvanceTrick' });
 			return;
 		}
 		case 'redeal':

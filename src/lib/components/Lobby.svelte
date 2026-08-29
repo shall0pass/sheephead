@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { SEATS, partnerSeat, pickBotNames } from '$lib/sheephead';
+	import { SEATS, pickBotNames } from '$lib/sheephead';
 	import type { Seat as SeatIndex } from '$lib/sheephead/types';
 	import type { GameStore } from '$lib/repo/gameStore.svelte';
 	import type { Presence } from '$lib/repo/presence.svelte';
@@ -28,23 +28,22 @@
 	}
 
 	const doc = $derived(store.doc);
-	const players = $derived(doc?.players ?? [null, null, null, null]);
+	const players = $derived(doc?.players ?? [null, null, null, null, null]);
 	const mySeat = $derived(store.mySeat);
 	const baseSeat = $derived(mySeat ?? 0);
 	const filled = $derived(players.every((p) => p != null));
 	const hasHuman = $derived(players.some((p) => p != null && !p.isBot));
-	const advanced = $derived(doc?.advanced ?? false);
 
-	// slot 0 bottom, 1 left, 2 top, 3 right — rotated so my seat is at the bottom.
-	const slotClass = ['area-bottom', 'area-left', 'area-top', 'area-right'];
+	// Screen slots, clockwise from the local player at the bottom.
+	const slotClass = [
+		'area-bottom',
+		'area-mid-right',
+		'area-top-right',
+		'area-top-left',
+		'area-mid-left'
+	];
 	function slotFor(seat: SeatIndex) {
-		return slotClass[(seat - baseSeat + 4) % 4];
-	}
-	function relationFor(seat: SeatIndex): 'you' | 'partner' | 'opponent' {
-		if (mySeat == null) return 'opponent';
-		if (seat === mySeat) return 'you';
-		if (seat === partnerSeat(mySeat)) return 'partner';
-		return 'opponent';
+		return slotClass[(seat - baseSeat + 5) % 5];
 	}
 
 	function sit(seat: SeatIndex) {
@@ -72,10 +71,8 @@
 		);
 	}
 	function deal() {
+		if (!filled) fillWithBots();
 		store.change({ type: 'StartHand', seed: crypto.randomUUID() });
-	}
-	function toggleAdvanced() {
-		store.change({ type: 'SetAdvanced', on: !advanced });
 	}
 
 	let copied = $state(false);
@@ -123,7 +120,7 @@
 					player={players[seat]}
 					online={players[seat]?.isBot || presence.isOnline(players[seat]?.actorId)}
 					isMe={seat === mySeat}
-					relation={relationFor(seat)}
+					relation={seat === mySeat ? 'you' : 'opponent'}
 					canSit={players[seat] == null}
 					canMove={mySeat != null}
 					onsit={() => sit(seat)}
@@ -138,7 +135,7 @@
 				{#if mySeat == null}
 					Pick a seat to join.
 				{:else}
-					You're seated. Your partner sits across from you.
+					You're seated. Teams form each hand once the picker calls a partner.
 				{/if}
 			</p>
 		</div>
@@ -154,31 +151,13 @@
 		</button>
 		<button
 			onclick={deal}
-			disabled={!filled || !hasHuman}
+			disabled={!hasHuman}
 			class="rounded-lg bg-green-500 px-6 py-2 font-bold text-green-950 hover:bg-green-400 disabled:opacity-40"
-			title={!filled ? 'All four seats must be filled' : ''}
+			title={!hasHuman ? 'At least one human must be seated' : ''}
 		>
 			Deal
 		</button>
 	</div>
-
-	<label
-		class="flex max-w-sm cursor-pointer items-start gap-3 rounded-lg bg-white/5 px-4 py-3 text-sm ring-1 ring-white/10"
-	>
-		<input
-			type="checkbox"
-			class="mt-0.5 h-4 w-4 accent-red-500"
-			checked={advanced}
-			onchange={toggleAdvanced}
-		/>
-		<span>
-			<span class="font-semibold">Advanced: allow reneging</span>
-			<span class="mt-0.5 block text-white/50">
-				Players may play any card. An illegal one is a renege — the other team takes 162 plus their
-				meld. Set this before the deal; it's locked once the game starts.
-			</span>
-		</span>
-	</label>
 </div>
 
 <style>
@@ -188,15 +167,18 @@
 		grid-template-rows: repeat(3, auto);
 		gap: 1rem;
 		place-items: center;
-		width: min(90vw, 620px);
+		width: min(92vw, 640px);
 	}
-	.area-top {
-		grid-area: 1 / 2;
+	.area-top-left {
+		grid-area: 1 / 1;
 	}
-	.area-left {
+	.area-top-right {
+		grid-area: 1 / 3;
+	}
+	.area-mid-left {
 		grid-area: 2 / 1;
 	}
-	.area-right {
+	.area-mid-right {
 		grid-area: 2 / 3;
 	}
 	.area-bottom {

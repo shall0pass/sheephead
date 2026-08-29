@@ -1,50 +1,68 @@
 // Trick-play legality.
 //
 // Rules of play:
-//   - Follow the led suit if you can.
-//   - If void of the led suit, you must play a trump ("trumping in") if you
-//     hold one.
-//   - Any trump you play must beat the highest trump already in the trick when
-//     you are able to — even if your partner played that highest trump.
-//   - When a non-trump is led and you can follow, you are under no obligation
-//     to beat what is already there.
-//   - Otherwise you may play anything.
+//   - Follow the led suit if you can (trump counts as one suit — a led Queen,
+//     Jack or Diamond means "trump was led").
+//   - If void of the led suit you may play anything. Sheephead has no forced
+//     trump-in and no obligation to overtrump.
+//   - The called ace binds two players until its suit is first led (both
+//     bindings lift on the last trick):
+//       * the partner must play the called card on that lead and may not slough
+//         it on any other trick;
+//       * the picker must keep a fail card of the called suit and may only play
+//         it when that suit is led;
+//       * an `under` hole card is played face-down on the called-suit lead and
+//         may not be played on any other trick.
 
 import type { Card, GameDoc, Seat } from './types';
-import { isTrump, suitOf, trumpStrength } from './cards';
+import { isTrump, leadSuitOf, suitOf } from './cards';
+import { calledSuit } from './partner';
 
-/** The cards `seat` may legally play right now. Empty if it is not their turn. */
+/** The cards `seat` may legally play right now. `[]` if it is not their turn. */
 export function legalMoves(doc: GameDoc, seat: Seat): Card[] {
 	const t = doc.trick;
-	if (!t || t.turn !== seat) return [];
+	if (doc.phase !== 'trick' || !t || t.turn !== seat) return [];
+
 	const hand = doc.hands[seat];
-	const trump = doc.trump;
+	const base = followSuit(hand, t.plays.length ? leadSuitOf(t.plays[0].card) : null);
+	if (t.number === 6) return base; // last trick — every binding is off
 
-	if (t.plays.length === 0) return hand.slice(); // leader plays anything
+	const call = doc.call;
+	if (!call || call.kind === 'alone') return base;
 
-	const led = suitOf(t.plays[0].card);
-	const inLed = hand.filter((c) => suitOf(c) === led);
-	const trumps = trump ? hand.filter((c) => suitOf(c) === trump) : [];
-	const trumpsPlayed = t.plays.map((p) => p.card).filter((c) => isTrump(c, trump));
-	const highTrump = trumpsPlayed.length
-		? trumpsPlayed.reduce((a, b) => (trumpStrength(b) > trumpStrength(a) ? b : a))
-		: null;
+	const cs = calledSuit(call); // a fail suit
+	const calledSuitLed = t.plays.length > 0 && leadSuitOf(t.plays[0].card) === cs;
 
-	if (trump && led === trump) {
-		// Trump led: must follow with trump, overtrumping if possible.
-		if (trumps.length === 0) return hand.slice();
-		return mustBeat(trumps, highTrump);
+	// The partner must play the called card on its suit's first lead, and may
+	// not discard it anywhere else.
+	if (call.kind === 'called' && seat === doc.partnerSeat && hand.includes(call.card)) {
+		if (calledSuitLed) return [call.card];
+		return exclude(base, (c) => c === call.card);
 	}
 
-	// Non-trump led.
-	if (inLed.length) return inLed; // follow suit, no rank obligation
-	if (trumps.length) return mustBeat(trumps, highTrump); // must trump in
-	return hand.slice(); // void of led suit and trump: throw off
+	// The picker keeps a fail card of the called suit until it is led.
+	if (call.kind === 'called' && seat === doc.picker && !calledSuitLed) {
+		return exclude(base, (c) => !isTrump(c) && suitOf(c) === cs);
+	}
+
+	// The picker's `under` hole card: forced on the called-suit lead, forbidden
+	// otherwise.
+	if (call.kind === 'under' && seat === doc.picker && hand.includes(call.hole)) {
+		if (calledSuitLed) return [call.hole];
+		return exclude(base, (c) => c === call.hole);
+	}
+
+	return base;
 }
 
-/** Among `trumps`, the ones that beat `highTrump`; or all of them if none can. */
-function mustBeat(trumps: Card[], highTrump: Card | null): Card[] {
-	if (!highTrump) return trumps;
-	const over = trumps.filter((c) => trumpStrength(c) > trumpStrength(highTrump));
-	return over.length ? over : trumps;
+function followSuit(hand: readonly Card[], led: ReturnType<typeof leadSuitOf> | null): Card[] {
+	if (led == null) return hand.slice();
+	const inLed = hand.filter((c) => leadSuitOf(c) === led);
+	return inLed.length ? inLed : hand.slice();
+}
+
+/** `base` minus the cards matching `drop`, unless that would leave nothing. */
+function exclude(base: Card[], drop: (c: Card) => boolean): Card[] {
+	const kept = base.filter((c) => !drop(c));
+	return kept.length ? kept : base;
 }

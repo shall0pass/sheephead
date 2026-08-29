@@ -4,8 +4,6 @@
 	import { pickBotNames } from '$lib/sheephead';
 	import JoinScreen from '$lib/components/JoinScreen.svelte';
 	import Lobby from '$lib/components/Lobby.svelte';
-	import Table from '$lib/components/Table.svelte';
-	import ChatBox from '$lib/components/ChatBox.svelte';
 	import { GameStore, joinExistingGame } from '$lib/repo/gameStore.svelte';
 	import { Presence } from '$lib/repo/presence.svelte';
 	import { Host } from '$lib/repo/host';
@@ -120,9 +118,21 @@
 	{#if phase === 'lobby'}
 		<Lobby {store} {presence} onleave={leave} />
 	{:else}
-		<Table {store} {presence} {host} onleave={leave} />
+		<div
+			class="flex min-h-screen flex-col items-center justify-center gap-3 bg-green-900 p-6 text-center text-white/80"
+		>
+			<p class="text-lg font-semibold">Hand in progress — phase: {phase}</p>
+			<p class="text-sm text-white/50">
+				The table UI is being rebuilt for Sheephead (Phase G). Bots are playing the hand out.
+			</p>
+			<button
+				onclick={leave}
+				class="rounded-lg bg-white/10 px-4 py-2 text-sm font-semibold hover:bg-white/20"
+			>
+				Leave table
+			</button>
+		</div>
 	{/if}
-	<ChatBox {store} />
 {:else}
 	<JoinScreen onjoined={attach} />
 	{#if bootError}

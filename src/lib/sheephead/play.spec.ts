@@ -1,135 +1,134 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { legalMoves } from './play';
-import { reduce } from './reducer';
 import { createGame } from './state';
-import type { Card, GameDoc, Seat, TrickPlay } from './types';
+import type { Call, Card, GameDoc, Seat, TrickPlay } from './types';
 
-function trickDoc(args: {
-	trump: GameDoc['trump'];
-	hands: Card[][];
+function trickDoc(opts: {
+	hands: Partial<Record<Seat, Card[]>>;
 	turn: Seat;
 	plays?: TrickPlay[];
 	number?: number;
-	leader?: Seat;
+	call?: Call | null;
+	picker?: Seat | null;
+	partnerSeat?: Seat | null;
 }): GameDoc {
 	const doc = createGame('T', 0);
 	doc.phase = 'trick';
-	doc.trump = args.trump;
-	doc.maker = 0;
-	doc.hands = args.hands.map((h) => [...h]);
+	doc.picker = opts.picker ?? 0;
+	doc.partnerSeat = opts.partnerSeat ?? null;
+	doc.call = opts.call ?? { kind: 'alone' };
+	doc.calledCard = doc.call && doc.call.kind !== 'alone' ? doc.call.card : null;
+	for (let s = 0 as Seat; s < 5; s = (s + 1) as Seat) doc.hands[s] = opts.hands[s] ?? [];
+	const leader = (opts.plays?.[0]?.seat ?? opts.turn) as Seat;
 	doc.trick = {
-		number: args.number ?? 2,
-		leader: args.leader ?? 0,
-		turn: args.turn,
-		plays: args.plays ?? [],
-		winner: null
+		number: opts.number ?? 3,
+		leader,
+		turn: opts.turn,
+		plays: opts.plays ?? []
 	};
 	return doc;
 }
 
-const P = (seat: Seat, card: Card): TrickPlay => ({ seat, card });
-
-describe('legalMoves', () => {
-	it('lets the leader play anything', () => {
-		const doc = trickDoc({ trump: 'S', hands: [['AH', '9S', 'KD'], [], [], []], turn: 0 });
-		expect(legalMoves(doc, 0).sort()).toEqual(['9S', 'AH', 'KD']);
+describe('legalMoves — following suit', () => {
+	it('the leader may play anything', () => {
+		const doc = trickDoc({ hands: { 2: ['AS', 'QC', '7H'] }, turn: 2, plays: [] });
+		expect(new Set(legalMoves(doc, 2))).toEqual(new Set(['AS', 'QC', '7H']));
 	});
 
-	it('requires following the led suit, with no obligation to beat it', () => {
+	it('must follow the led fail suit when able', () => {
 		const doc = trickDoc({
-			trump: 'S',
-			hands: [[], ['9H', 'KH', '9S', 'AD'], [], []],
+			hands: { 1: ['AS', '9S', 'QC', 'AH'] },
 			turn: 1,
-			plays: [P(0, 'AH')]
+			plays: [{ seat: 0, card: 'KS' }]
 		});
-		expect(legalMoves(doc, 1).sort()).toEqual(['9H', 'KH']);
+		expect(new Set(legalMoves(doc, 1))).toEqual(new Set(['AS', '9S']));
 	});
 
-	it('forces trumping in when void of the led suit', () => {
+	it('a led queen or jack means trump was led — must follow with trump', () => {
 		const doc = trickDoc({
-			trump: 'S',
-			hands: [[], ['9S', 'KS', 'AD', 'QC'], [], []],
+			hands: { 1: ['QH', '9D', 'AS', '7C'] },
 			turn: 1,
-			plays: [P(0, 'AH')]
+			plays: [{ seat: 0, card: 'QS' }]
 		});
-		expect(legalMoves(doc, 1).sort()).toEqual(['9S', 'KS']);
+		expect(new Set(legalMoves(doc, 1))).toEqual(new Set(['QH', '9D']));
 	});
 
-	it('forces overtrumping the highest trump so far — even the partner’s', () => {
-		// Seat 1 (partner of seat 3) trumped in with KS; seat 3 must beat it.
+	it('when void of the led suit, anything goes — no forced trump-in', () => {
 		const doc = trickDoc({
-			trump: 'S',
-			hands: [[], [], [], ['9S', 'QS', 'AD']],
-			turn: 3,
-			plays: [P(0, 'AH'), P(1, 'KS'), P(2, '9H')]
-		});
-		expect(legalMoves(doc, 3)).toEqual(['9S']); // 9 of trump outranks the king
-	});
-
-	it('allows any trump when none of them can beat the highest', () => {
-		const doc = trickDoc({
-			trump: 'S',
-			hands: [[], [], [], ['QS', 'TS', 'AD']],
-			turn: 3,
-			plays: [P(0, 'AH'), P(1, 'JS'), P(2, '9H')]
-		});
-		expect(legalMoves(doc, 3).sort()).toEqual(['QS', 'TS']);
-	});
-
-	it('when trump is led, must follow and overtrump if able', () => {
-		const doc = trickDoc({
-			trump: 'S',
-			hands: [[], ['9S', 'QS', 'AH'], [], []],
+			hands: { 1: ['QC', '9D', 'AH', '7C'] },
 			turn: 1,
-			plays: [P(0, 'KS')]
+			plays: [{ seat: 0, card: 'KS' }]
 		});
-		expect(legalMoves(doc, 1)).toEqual(['9S']);
+		expect(new Set(legalMoves(doc, 1))).toEqual(new Set(['QC', '9D', 'AH', '7C']));
 	});
 
-	it('lets a player throw off anything when void of the led suit and trump', () => {
+	it('no obligation to overtrump', () => {
 		const doc = trickDoc({
-			trump: 'S',
-			hands: [[], ['AH', 'KD', 'QC'], [], []],
-			turn: 1,
-			plays: [P(0, 'KS')]
+			hands: { 2: ['QS', 'JD', '7D'] }, // all trump; a low one is fine
+			turn: 2,
+			plays: [
+				{ seat: 0, card: '9D' },
+				{ seat: 1, card: 'QH' }
+			]
 		});
-		expect(legalMoves(doc, 1).sort()).toEqual(['AH', 'KD', 'QC']);
+		expect(new Set(legalMoves(doc, 2))).toEqual(new Set(['QS', 'JD', '7D']));
 	});
 });
 
-describe('playing out a trick', () => {
-	it('awards the trick to the highest card and that seat leads next', () => {
+describe('legalMoves — the called ace', () => {
+	const call: Call = { kind: 'called', card: 'AH' };
+
+	it('the partner must play the called ace on the first heart lead', () => {
 		const doc = trickDoc({
-			trump: 'S',
-			number: 2,
-			leader: 0,
-			turn: 0,
-			hands: [['AH'], ['9H'], ['QS'], ['KH']]
+			hands: { 3: ['AH', 'KH', '9H', 'QC'] },
+			turn: 3,
+			plays: [{ seat: 0, card: '8H' }],
+			call,
+			partnerSeat: 3
 		});
-		reduce(doc, { type: 'PlayCard', seat: 0, card: 'AH' });
-		reduce(doc, { type: 'PlayCard', seat: 1, card: '9H' });
-		reduce(doc, { type: 'PlayCard', seat: 2, card: 'QS' }); // trumps in
-		reduce(doc, { type: 'PlayCard', seat: 3, card: 'KH' });
-
-		// the fourth card is held on screen until AdvanceTrick
-		expect(doc.phase).toBe('trickDone');
-		expect(doc.trick?.plays).toHaveLength(4);
-		expect(doc.trick?.winner).toBe(2);
-		expect(doc.wonBySeat[2]).toEqual([]);
-
-		reduce(doc, { type: 'AdvanceTrick' });
-		expect(doc.wonBySeat[2]).toEqual([['AH', '9H', 'QS', 'KH']]);
-		expect(doc.lastTrickWinner).toBe(2);
-		expect(doc.trick).toMatchObject({ number: 3, leader: 2, turn: 2, plays: [], winner: null });
+		expect(legalMoves(doc, 3)).toEqual(['AH']);
 	});
 
-	it('rejects a card that breaks suit-following', () => {
+	it('the partner may not slough the called ace on a different lead', () => {
 		const doc = trickDoc({
-			trump: 'S',
-			turn: 1,
-			hands: [[], ['9H', 'AD'], [], []],
-			plays: [P(0, 'KH')]
+			hands: { 3: ['AH', '9C', 'KC'] },
+			turn: 3,
+			plays: [{ seat: 0, card: 'KS' }], // spade led, partner is void of spades
+			call,
+			partnerSeat: 3
 		});
-		expect(() => reduce(doc, { type: 'PlayCard', seat: 1, card: 'AD' })).toThrow();
+		expect(new Set(legalMoves(doc, 3))).toEqual(new Set(['9C', 'KC']));
+	});
+
+	it('the picker may not dump the called-suit fail card early', () => {
+		const doc = trickDoc({
+			hands: { 0: ['KH', 'QC', 'JD', '7S'] }, // KH is the retained heart
+			turn: 0,
+			plays: [{ seat: 4, card: 'KC' }], // club led, picker void of clubs
+			call,
+			picker: 0
+		});
+		expect(new Set(legalMoves(doc, 0))).toEqual(new Set(['QC', 'JD', '7S']));
+	});
+
+	it('both bindings lift on the last trick', () => {
+		const doc = trickDoc({
+			hands: { 3: ['AH'] },
+			turn: 3,
+			number: 6,
+			plays: [{ seat: 0, card: 'KC' }],
+			call,
+			partnerSeat: 3
+		});
+		expect(legalMoves(doc, 3)).toEqual(['AH']);
+		const picker = trickDoc({
+			hands: { 0: ['KH'] },
+			turn: 0,
+			number: 6,
+			plays: [{ seat: 4, card: 'KC' }],
+			call,
+			picker: 0
+		});
+		expect(legalMoves(picker, 0)).toEqual(['KH']);
 	});
 });

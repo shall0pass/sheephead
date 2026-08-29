@@ -1,29 +1,24 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { deal } from './deal';
 import { FULL_DECK } from './cards';
-import type { Seat } from './types';
 
 describe('deal', () => {
-	it('gives every seat six cards and uses the whole deck once', () => {
-		const { hands } = deal('seed-1', 0);
-		expect(hands.map((h) => h.length)).toEqual([6, 6, 6, 6]);
-		expect(new Set(hands.flat()).size).toBe(24);
-		expect([...hands.flat()].sort()).toEqual([...FULL_DECK].sort());
+	it('gives six cards to each of five seats and a two-card blind', () => {
+		const { hands, blind } = deal('seed-1', 0);
+		expect(hands).toHaveLength(5);
+		for (const h of hands) expect(h).toHaveLength(6);
+		expect(blind).toHaveLength(2);
 	});
 
-	it("turns the dealer's sixth card face up", () => {
-		for (const dealer of [0, 1, 2, 3] as Seat[]) {
-			const { hands, upCard } = deal('seed-x', dealer);
-			expect(upCard).toBe(hands[dealer][5]);
-			expect(hands[dealer]).toContain(upCard);
-		}
+	it('uses all 32 cards exactly once', () => {
+		const { hands, blind } = deal('seed-2', 3);
+		const all = [...hands.flat(), ...blind];
+		expect(all).toHaveLength(32);
+		expect(new Set(all)).toEqual(new Set(FULL_DECK));
 	});
 
 	it('is deterministic for a given seed and dealer', () => {
-		expect(deal('abc', 2)).toEqual(deal('abc', 2));
-	});
-
-	it('produces different deals for different seeds', () => {
-		expect(deal('abc', 0).hands).not.toEqual(deal('xyz', 0).hands);
+		expect(deal('same', 1)).toEqual(deal('same', 1));
+		expect(deal('a', 1)).not.toEqual(deal('b', 1));
 	});
 });

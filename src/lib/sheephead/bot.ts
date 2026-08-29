@@ -1,104 +1,128 @@
-// Heuristic computer player. Pure functions: given a document and a seat whose
-// turn it is, return a legal action. No search, just sensible rules of thumb.
+// Heuristic computer player. Pure functions: given a document (and a seat whose
+// turn it is), return a legal action. No search, just rules of thumb. Phase F
+// tunes these; here they only need to always produce a legal move.
 
-import type { Bid, Card, GameDoc, Seat, Suit } from './types';
-import { cardPoints, isTrump, nonTrumpStrength, rankOf, suitOf, trumpStrength } from './cards';
-import { legalBids } from './bidding';
+import type { CallPayload } from './actions';
+import type { Card, GameDoc, Seat } from './types';
+import {
+	beats,
+	cardPoints,
+	failRank,
+	isTrump,
+	leadSuitOf,
+	rankOf,
+	suitOf,
+	trumpRank
+} from './cards';
+import { legalCalls } from './partner';
+import { isLastToDecide } from './picking';
 import { legalMoves } from './play';
-import { partnerSeat } from './state';
+import { isPickerTeam } from './state';
 
-export function chooseBid(doc: GameDoc, seat: Seat): Bid {
-	const b = doc.bidding;
-	if (!b) return 'pass';
-	const opts = legalBids(doc, seat);
-	const hand = doc.hands[seat];
+// --- picking ------------------------------------------------------------
 
-	if (b.round === 1) {
-		const suit = suitOf(doc.upCard as NonNullable<GameDoc['upCard']>);
-		if (opts.some((o) => o === 'accept') && handStrength(hand, suit) >= 26) return 'accept';
-		return 'pass';
-	}
-
-	// Round 2. Name the strongest holdable suit; the dealer must not pass the
-	// deal away if they have any legal call.
-	const suited = opts.filter((o): o is { suit: Suit } => typeof o === 'object');
-	if (suited.length) {
-		const best = suited.reduce((x, y) =>
-			handStrength(hand, y.suit) >= handStrength(hand, x.suit) ? y : x
-		);
-		if (seat === doc.dealer || handStrength(hand, best.suit) >= 22) return best;
-	}
-	return 'pass';
-}
-
-function handStrength(hand: Card[], trump: Suit): number {
-	let score = 0;
+/** Rough "how good is this hand to play as picker" score. */
+function pickStrength(hand: readonly Card[]): number {
+	let s = 0;
 	let trumps = 0;
 	for (const c of hand) {
-		if (suitOf(c) === trump) {
+		if (isTrump(c)) {
 			trumps++;
-			score += 4 + trumpStrength(c);
-			if (rankOf(c) === 'J') score += 6;
-			else if (rankOf(c) === '9') score += 3;
+			s += 2 + trumpRank(c) / 3;
+			if (rankOf(c) === 'Q') s += 3;
 		} else if (rankOf(c) === 'A') {
-			score += 4;
-		} else if (rankOf(c) === 'T') {
-			score += 1;
+			s += 1.5;
 		}
 	}
-	if (trumps >= 3) score += 6;
-	if (trumps >= 4) score += 8;
-	if (trumps === 0) score -= 20;
-	return score;
+	if (trumps >= 4) s += 4;
+	if (trumps <= 1) s -= 8;
+	return s;
+}
+
+export function choosePick(doc: GameDoc, seat: Seat): boolean {
+	// Never leave a re-deal on the table when you are the last to decide — a
+	// weak-hand stalemate would loop forever.
+	if (isLastToDecide(doc, seat)) return true;
+	const threshold = seat === doc.dealer ? 9 : 11;
+	return pickStrength(doc.hands[seat]) >= threshold;
+}
+
+// --- bury -------------------------------------------------------------
+
+/** Lower is a better bury: shed low points, and prefer to void a short fail
+ *  suit so those tricks can be trumped. */
+function buryBadness(c: Card, suitLen: (s: string) => number): number {
+	if (isTrump(c)) return 1000 + trumpRank(c); // keep trump unless forced
+	return cardPoints(c) * 4 + suitLen(suitOf(c)) * 2 + failRank(c);
+}
+
+export function chooseBury(doc: GameDoc): [Card, Card] {
+	const hand = doc.hands[doc.picker as Seat];
+	const lenBySuit = new Map<string, number>();
+	for (const c of hand)
+		if (!isTrump(c)) lenBySuit.set(suitOf(c), (lenBySuit.get(suitOf(c)) ?? 0) + 1);
+	const suitLen = (s: string) => lenBySuit.get(s) ?? 0;
+	const sorted = [...hand].sort((a, b) => buryBadness(a, suitLen) - buryBadness(b, suitLen));
+	return [sorted[0], sorted[1]];
+}
+
+// --- call partner ----------------------------------------------------
+
+export function chooseCall(doc: GameDoc): CallPayload {
+	const opts = legalCalls(doc);
+	const hand = doc.hands[doc.picker as Seat];
+	const failLen = (s: string) => hand.filter((c) => !isTrump(c) && suitOf(c) === s).length;
+
+	const aces = opts.filter((o) => o.kind === 'ace');
+	if (aces.length) {
+		const best = aces.reduce((x, y) => (failLen(y.suit) < failLen(x.suit) ? y : x));
+		return { suit: best.suit };
+	}
+	const tens = opts.filter((o) => o.kind === 'ten');
+	if (tens.length) return { suit: tens[0].suit };
+	const unders = opts.filter((o) => o.kind === 'under');
+	if (unders.length) {
+		const hole = [...hand].sort(
+			(a, b) => cardPoints(a) - cardPoints(b) || trumpRank(a) - trumpRank(b)
+		)[0];
+		return { under: true, suit: unders[0].suit, hole };
+	}
+	return { alone: true };
+}
+
+// --- trick play ----------------------------------------------------
+
+function strength(c: Card): number {
+	return isTrump(c) ? 100 + trumpRank(c) : failRank(c);
 }
 
 export function chooseCard(doc: GameDoc, seat: Seat): Card {
 	const moves = legalMoves(doc, seat);
-	if (moves.length === 1) return moves[0];
-	const trump = doc.trump;
+	if (moves.length <= 1) return moves[0];
 	const t = doc.trick;
 	if (!t) return moves[0];
 
-	const value = (c: Card) => cardPoints(c, trump);
-	const cheapest = [...moves].sort(
-		(a, b) => value(a) - value(b) || rawStrength(a, trump) - rawStrength(b, trump)
-	);
+	const value = (c: Card) => cardPoints(c);
+	const cheapest = [...moves].sort((a, b) => value(a) - value(b) || strength(a) - strength(b));
 
 	if (t.plays.length === 0) {
-		// Lead: a low non-trump if possible, keeping trump in reserve.
-		const nonTrump = cheapest.filter((c) => !isTrump(c, trump));
+		const nonTrump = cheapest.filter((c) => !isTrump(c));
 		return nonTrump[0] ?? cheapest[0];
 	}
 
-	const led = suitOf(t.plays[0].card);
-	const winning = t.plays.reduce((a, b) =>
-		trickStrength(b.card, trump, led) > trickStrength(a.card, trump, led) ? b : a
-	);
-	const partnerWinning = winning.seat === partnerSeat(seat);
-	const beating = moves.filter(
-		(c) => trickStrength(c, trump, led) > trickStrength(winning.card, trump, led)
-	);
+	const led = leadSuitOf(t.plays[0].card);
+	const contenders = t.plays.filter((p) => !p.faceDown);
+	const winning = contenders.reduce((a, b) => (beats(b.card, a.card, led) ? b : a));
+	const teammateWinning =
+		winning.seat !== seat && isPickerTeam(doc, winning.seat) === isPickerTeam(doc, seat);
+	const canBeat = moves.filter((c) => beats(c, winning.card, led));
 
-	if (partnerWinning) {
-		// Partner has it — throw them the most points we safely can.
+	if (teammateWinning) {
+		// Schmear: hand the most points we safely can.
 		return [...moves].sort((a, b) => value(b) - value(a))[0];
 	}
-	if (beating.length) {
-		// Take the trick as cheaply as possible.
-		return beating.sort(
-			(a, b) => value(a) - value(b) || rawStrength(a, trump) - rawStrength(b, trump)
-		)[0];
+	if (canBeat.length) {
+		return canBeat.sort((a, b) => value(a) - value(b) || strength(a) - strength(b))[0];
 	}
-	// Can't win — discard the least valuable card.
 	return cheapest[0];
-}
-
-function rawStrength(c: Card, trump: Suit | null): number {
-	return isTrump(c, trump) ? 100 + trumpStrength(c) : nonTrumpStrength(c);
-}
-
-function trickStrength(c: Card, trump: Suit | null, led: Suit): number {
-	if (isTrump(c, trump)) return 200 + trumpStrength(c);
-	if (suitOf(c) === led) return 100 + nonTrumpStrength(c);
-	return nonTrumpStrength(c);
 }

@@ -171,15 +171,13 @@ export class Host {
 		const doc = this.#store.doc;
 		if (!doc || !nextBotAction(doc, this.#opts.makeSeed)) return;
 
-		const { minDelayMs, maxDelayMs, trickDelayMs, interHandDelayMs, redealDelayMs } = this.#opts;
+		const { minDelayMs, maxDelayMs, interHandDelayMs, redealDelayMs } = this.#opts;
 		const delay =
-			doc.phase === 'trickDone'
-				? trickDelayMs
-				: doc.phase === 'handScored'
-					? interHandDelayMs
-					: doc.phase === 'redeal'
-						? redealDelayMs
-						: minDelayMs + Math.random() * (maxDelayMs - minDelayMs);
+			doc.phase === 'handScored'
+				? interHandDelayMs
+				: doc.phase === 'redeal'
+					? redealDelayMs
+					: minDelayMs + Math.random() * (maxDelayMs - minDelayMs);
 
 		this.#moveTimer = setTimeout(() => {
 			this.#moveTimer = undefined;

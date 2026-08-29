@@ -1,77 +1,120 @@
 // End-of-hand scoring.
 //
-// Each team totals the card points in the tricks it won, +10 for taking the
-// last trick (162 points available in tricks), plus its meld. If the making
-// team's total (tricks + meld) is strictly greater than their opponents', both
-// teams score what they made. Otherwise the makers are "set": they score
-// nothing (meld included) and the opponents score their own total.
+// The picker's team needs 61+ card points (buried cards included) to win; the
+// opposition wins with 60 or fewer left to the picker. Schneider doubles the
+// stake when the losing side is held to 30 or fewer (i.e. the winning side
+// takes 90+); a "no-tricker" triples it when one side takes all six tricks.
+// Scoring is zero-sum game points, not card points — see the table below.
 //
-// The game ends when a team reaches 500. If both cross 500 in the same hand the
-// higher total wins; an exact tie at/over 500 plays another hand.
+// The game ends after `handsToPlay` scored hands; the seats that finish with a
+// positive tally are the winners (fireworks), a negative tally loses (tears).
 
-import type { GameDoc, HandResult, Suit, TeamId } from './types';
+import type { GameDoc, HandOutcome, HandResult } from './types';
 import { cardPoints } from './cards';
-import { SEATS, otherTeam, teamOf } from './state';
+import { SEATS, isPickerTeam } from './state';
+
+const TOTAL_POINTS = 120;
 
 export function scoreHand(doc: GameDoc): HandResult {
-	const trump = doc.trump as Suit;
-	const maker = doc.maker as TeamId;
-	const opp = otherTeam(maker);
-
-	const trickPoints: [number, number] = [0, 0];
+	let pickerPoints = 0;
+	let pickerTricks = 0;
+	let oppTricks = 0;
 	for (const seat of SEATS) {
-		for (const won of doc.wonBySeat[seat]) {
-			for (const card of won) trickPoints[teamOf(seat)] += cardPoints(card, trump);
+		const mine = isPickerTeam(doc, seat);
+		for (const trick of doc.tricksWon[seat]) {
+			if (mine) {
+				pickerTricks++;
+				for (const c of trick) pickerPoints += cardPoints(c);
+			} else {
+				oppTricks++;
+			}
 		}
 	}
-	if (doc.lastTrickWinner != null) trickPoints[teamOf(doc.lastTrickWinner)] += 10;
+	// The buried cards always count for the picker's team.
+	for (const c of doc.buried) pickerPoints += cardPoints(c);
+	const oppPoints = TOTAL_POINTS - pickerPoints;
 
-	const meldPoints: [number, number] = [doc.melds.points[0], doc.melds.points[1]];
-	const makerTotal = trickPoints[maker] + meldPoints[maker];
-	const oppTotal = trickPoints[opp] + meldPoints[opp];
-	const set = !(makerTotal > oppTotal);
+	const alone = doc.call?.kind === 'alone';
+	const outcome = classify(pickerPoints, pickerTricks, oppTricks);
+	const awarded = award(doc, outcome, alone);
 
-	const awarded: [number, number] = [0, 0];
-	if (set) {
-		awarded[opp] = oppTotal;
-	} else {
-		awarded[maker] = makerTotal;
-		awarded[opp] = oppTotal;
-	}
+	const sum = awarded.reduce((a, b) => a + b, 0);
+	if (sum !== 0) throw new Error(`hand score does not sum to zero: [${awarded}]`);
 
 	return {
+		handNumber: doc.handNumber,
 		dealer: doc.dealer,
-		trump,
-		maker,
-		trickPoints,
-		meldPoints,
-		set,
-		renege: false,
+		picker: doc.picker,
+		partnerSeat: alone ? null : doc.partnerSeat,
+		alone,
+		calledCard: doc.calledCard,
+		pickerPoints,
+		oppPoints,
+		outcome,
 		awarded,
-		runningAfter: [0, 0]
+		tallyAfter: SEATS.map((s) => doc.score.tally[s] + awarded[s])
 	};
 }
 
-/** Trick points each team has banked so far this hand (no last-trick bonus,
- *  no meld) — for the live scoreboard during play. */
-export function trickPointsSoFar(doc: GameDoc): [number, number] {
-	const pts: [number, number] = [0, 0];
-	for (const seat of SEATS) {
-		for (const won of doc.wonBySeat[seat]) {
-			for (const card of won) pts[teamOf(seat)] += cardPoints(card, doc.trump);
-		}
+/** Trick / no-trick cases turn on the trick count (the picker keeps the buried
+ *  cards regardless); schneider turns on card points. */
+function classify(pickerPoints: number, pickerTricks: number, oppTricks: number): HandOutcome {
+	if (oppTricks === 0) return 'pickerWinNoTrick';
+	if (pickerTricks === 0) return 'pickerLossNoTrick';
+	if (pickerPoints >= 90) return 'pickerWinSchneider';
+	if (pickerPoints >= 61) return 'pickerWin';
+	if (pickerPoints <= 30) return 'pickerLossSchneider';
+	return 'pickerLoss';
+}
+
+/** `[picker, partner, eachOpponent]` game points for the outcome. The alone
+ *  column (no partner column in play) keeps the same per-player amounts spread
+ *  over four opponents; the doc has no alone table, this is the standard
+ *  zero-sum convention. */
+const TABLE: Record<HandOutcome, { partnered: [number, number, number]; alone: [number, number] }> =
+	{
+		redeal: { partnered: [0, 0, 0], alone: [0, 0] },
+		pickerWin: { partnered: [2, 1, -1], alone: [4, -1] },
+		pickerWinSchneider: { partnered: [4, 2, -2], alone: [8, -2] },
+		pickerWinNoTrick: { partnered: [6, 3, -3], alone: [12, -3] },
+		pickerLoss: { partnered: [-2, -1, 1], alone: [-4, 1] },
+		pickerLossSchneider: { partnered: [-4, -2, 2], alone: [-8, 2] },
+		pickerLossNoTrick: { partnered: [-9, 0, 3], alone: [-12, 3] }
+	};
+
+function award(doc: GameDoc, outcome: HandOutcome, alone: boolean): number[] {
+	const a = [0, 0, 0, 0, 0];
+	const picker = doc.picker;
+	if (picker == null) return a;
+	const partner = alone ? null : doc.partnerSeat;
+	const row = TABLE[outcome];
+
+	if (alone) {
+		const [pickerAmt, oppAmt] = row.alone;
+		a[picker] = pickerAmt;
+		for (const s of SEATS) if (s !== picker) a[s] = oppAmt;
+	} else {
+		const [pickerAmt, partnerAmt, oppAmt] = row.partnered;
+		a[picker] = pickerAmt;
+		if (partner != null) a[partner] = partnerAmt;
+		for (const s of SEATS) if (s !== picker && s !== partner) a[s] = oppAmt;
 	}
+	return a;
+}
+
+/** Card points the picker's team has banked so far this hand (buried included),
+ *  for the live scoreboard during play. */
+export function pickerPointsSoFar(doc: GameDoc): number {
+	let pts = 0;
+	for (const seat of SEATS) {
+		if (!isPickerTeam(doc, seat)) continue;
+		for (const trick of doc.tricksWon[seat]) for (const c of trick) pts += cardPoints(c);
+	}
+	for (const c of doc.buried) pts += cardPoints(c);
 	return pts;
 }
 
-/** The winning team once a hand's scores are in `running`, or `null` if the
- *  game continues. */
-export function checkGameEnd(running: readonly [number, number]): TeamId | null {
-	const [a, b] = running;
-	if (a < 500 && b < 500) return null;
-	if (a >= 500 && b >= 500) {
-		if (a === b) return null;
-		return a > b ? 0 : 1;
-	}
-	return a >= 500 ? 0 : 1;
+/** Whether the game is over (enough hands played). The caller sets `winners`. */
+export function checkGameEnd(doc: GameDoc): boolean {
+	return doc.handNumber >= doc.handsToPlay;
 }
