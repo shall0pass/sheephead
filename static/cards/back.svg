@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 89" role="img" aria-label="card back">
+  <defs>
+    <pattern id="lattice" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <rect width="7" height="7" fill="#9c1414"/>
+      <circle cx="3.5" cy="3.5" r="1.15" fill="#d98a8a"/>
+    </pattern>
+  </defs>
+  <rect x="1" y="1" width="62" height="87" rx="4.5" fill="#9c1414"/>
+  <rect x="3.5" y="3.5" width="57" height="82" rx="3" fill="url(#lattice)"/>
+  <rect x="3.5" y="3.5" width="57" height="82" rx="3" fill="none" stroke="#fff" stroke-width="1.4"/>
+  <rect x="1" y="1" width="62" height="87" rx="4.5" fill="none" stroke="#fff" stroke-width="0.9"/>
+</svg>

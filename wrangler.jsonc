@@ -1,0 +1,13 @@
+{
+	"$schema": "./node_modules/wrangler/config-schema.json",
+	"name": "clabber",
+	"pages_build_output_dir": "./build",
+	"compatibility_date": "2026-08-28"
+
+	// Short join codes (optional): bind a KV namespace as GAMES for the
+	// functions/games/[code].js registry. Create it with
+	//   npx wrangler kv namespace create GAMES
+	// then add, with the printed id:
+	//   "kv_namespaces": [{ "binding": "GAMES", "id": "<id>" }]
+	// Without it, games are shared by invite link. See docs/deploy-cloudflare.md.
+}

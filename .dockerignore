@@ -1,0 +1,26 @@
+# Build context trimming for the root (web) image.
+**/node_modules
+.git
+.github
+.svelte-kit
+build
+.output
+
+# Not needed to build the app (the card sprite is committed under static/).
+artifacts
+docs
+scratchpad
+
+# Local env — PUBLIC_SYNC_URL comes from the build ARG instead.
+.env
+.env.*
+!.env.example
+
+# Editor / OS / logs
+.vscode
+*.log
+.DS_Store
+
+# The sync server has its own image / build context.
+sync-server/node_modules
+sync-server/data

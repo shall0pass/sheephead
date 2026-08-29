@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <defs>
+    <radialGradient id="felt" cx="50%" cy="40%" r="78%">
+      <stop offset="0%" stop-color="#1a8a54" />
+      <stop offset="70%" stop-color="#0a5c36" />
+      <stop offset="100%" stop-color="#064328" />
+    </radialGradient>
+    <linearGradient id="card" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffffff" />
+      <stop offset="100%" stop-color="#eef0f3" />
+    </linearGradient>
+    <path id="spade"
+      d="M50 10C50 10 22 33 22 52C22 63 30 70 39 70C43 70 47 68 50 65C48 78 42 86 34 90L66 90C58 86 52 78 50 65C53 68 57 70 61 70C70 70 78 63 78 52C78 33 50 10 50 10Z" />
+  </defs>
+
+  <rect width="512" height="512" rx="102" fill="url(#felt)" />
+
+  <!-- playing card, kept inside the maskable safe zone -->
+  <g>
+    <rect x="142" y="104" width="228" height="308" rx="22" fill="#000000" opacity="0.22" />
+    <rect x="140" y="100" width="228" height="308" rx="22" fill="url(#card)" stroke="#d7d9df" stroke-width="2" />
+  </g>
+
+  <!-- centre pip -->
+  <use href="#spade" transform="translate(181 187) scale(1.5)" fill="#141414" />
+
+  <!-- rank + pip in opposite corners -->
+  <g fill="#141414" font-family="Georgia, 'Times New Roman', serif" font-weight="700">
+    <text x="171" y="171" font-size="42" text-anchor="middle">A</text>
+    <use href="#spade" transform="translate(160 178) scale(0.30)" />
+  </g>
+  <g fill="#141414" font-family="Georgia, 'Times New Roman', serif" font-weight="700" transform="rotate(180 256 256)">
+    <text x="171" y="171" font-size="42" text-anchor="middle">A</text>
+    <use href="#spade" transform="translate(160 178) scale(0.30)" />
+  </g>
+</svg>

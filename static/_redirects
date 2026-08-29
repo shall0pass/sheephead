@@ -1,0 +1,4 @@
+# Cloudflare Pages: serve the SPA shell for any route that isn't a static file
+# or a Function. Static assets and /functions/* are matched first, so the
+# join-code registry at /games/:code still works.
+/*  /index.html  200

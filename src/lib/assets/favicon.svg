@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <title>Clabber</title>
+  <rect width="64" height="64" rx="13" fill="#0a5c36" />
+  <rect x="15" y="8" width="34" height="48" rx="6" fill="#ffffff" stroke="#d7d9df" stroke-width="1.5" />
+  <path transform="translate(15 12) scale(0.34)"
+    d="M50 10C50 10 22 33 22 52C22 63 30 70 39 70C43 70 47 68 50 65C48 78 42 86 34 90L66 90C58 86 52 78 50 65C53 68 57 70 61 70C70 70 78 63 78 52C78 33 50 10 50 10Z"
+    fill="#141414" />
+</svg>
