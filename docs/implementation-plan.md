@@ -488,23 +488,22 @@ Each phase ends green: `npm run lint`, `npm run check`, `npm test`,
 `npm run build`.
 
 **Status — all phases complete (branch `sheephead-rework`).** Commits:
-A `292edc8`, B–E `52e8ba5`, F `bb1d137`, G `2dd8b0d`, H `7ef1193`. Every
-commit passed `lint` / `check` / `test` / `build`; the suite is at 106 tests
-(19 files).
+A `292edc8`, B–E `52e8ba5`, F `bb1d137`, G `2dd8b0d`, H `7ef1193`, I (this commit).
+Every commit passed `lint` / `check` / `test` / `build`; the suite is at 107
+tests (20 files).
 
 **As built:** Phase A shipped on its own; Phases B–E landed as one
 "rules engine" commit (the Clabber modules shared `types.ts` / `cards.ts` too
 tightly to split further while keeping tests green), with the in‑game UI
-reduced to a placeholder in the interim. Phases F, G and H then shipped
+reduced to a placeholder in the interim. Phases F, G, H and I then shipped
 separately.
 
-**Still open:** the full‑game **Playwright E2E** from Phase G (one scripted
-human + four bots through the real UI) — the five‑bot `simulate.spec.ts` plus
-the chromium `host.svelte.spec` game‑to‑completion test cover the engine/host
-path and the panels have component tests, but a browser run of the actual
-`Table` flow is not yet automated. A live `docker compose up` /
-`wrangler pages dev` smoke test has also not been re‑run since the rename
-(the env‑var wiring is confirmed by inspection). These are Phase I below.
+**Only open item:** a manual smoke test on four real devices (operator, needs
+physical hardware). The full‑game `Table` flow has an automated chromium
+integration test (`Table.svelte.spec.ts`), and both deploy paths
+(`docker compose up --build` and `wrangler pages dev`) were run for real and
+round‑trip the app, the SPA fallback and the `/games/:code` registry — see
+Phase I.
 
 ### Phase A — Rename & re‑brand — ✅ done (`292edc8`)
 
@@ -602,7 +601,7 @@ path and the panels have component tests, but a browser run of the actual
       (chromium — claims the role, drives bots off the lobby, stands down for a
       live foreign host, takes over a stale host mid‑hand and finishes).
 
-### Phase G — Table & play UI — ✅ done (`2dd8b0d`), E2E deferred
+### Phase G — Table & play UI — ✅ done (`2dd8b0d`)
 
 - [x] `Table.svelte` rebuilt for 5 seats; `PlayerPlate` gains picker badge +
       gated partner highlight; `CardFan` unchanged.
@@ -618,10 +617,9 @@ path and the panels have component tests, but a browser run of the actual
 - [x] Tests: `sortHand` (trump‑first for the Sheephead trump set, in
       `cards.spec.ts`), `MyHand.svelte` legal gating + bury toggle,
       `Scoreboard` strip + breakdown modal, `GameOver` win/loss/spectator.
-- [ ] **Deferred to Phase I:** a full‑game Playwright E2E — one
-      Playwright‑driven human + four host‑driven bots play a complete game
-      through the real UI (picking → bury → call → trick play → hand scoring →
-      next hand → game over).
+- [x] **Done in Phase I:** a full‑game chromium test drives one human + four
+      host bots through the real UI (pick → bury → call → trick play → hand
+      scoring → next hand → game over) — `Table.svelte.spec.ts`.
 
 ### Phase H — Win ∕ lose & polish — ✅ done (`7ef1193`)
 
@@ -640,29 +638,33 @@ path and the panels have component tests, but a browser run of the actual
 - [x] Deploy docs / `docker-compose.yml` env‑var wiring confirmed by
       inspection (`PUBLIC_SYNC_URL` unchanged, `CLABBER_SYNC_URL` →
       `SHEEPHEAD_SYNC_URL`).
-- [ ] **Deferred to Phase I:** an actual `docker compose up --build` /
-      `wrangler pages dev` smoke run since the rename.
+- [x] **Done in Phase I:** `docker compose up --build` and
+      `wrangler pages dev` both run for real — the app, the SPA fallback and
+      the `/games/:code` registry round‑trip on both.
 
-### Phase I — E2E & deploy verification — mostly done (`<this commit>`)
+### Phase I — E2E & deploy verification — ✅ done
 
 - [x] Full‑game integration test through the real `Table` UI:
       `Table.svelte.spec.ts` (chromium) seats one "human" (seat 0) and clicks
       the rendered controls — Pick, bury two cards + Bury, **Go alone**, then
       one legal hand card per trick — while the `Host` drives the other four
-      seats. Runs `handsToPlay = 2` from the deal to `gameOver`, asserting two
-      scored hands, a zero‑sum tally, and the "Play again" button. (This is a
-      `vitest-browser-svelte` test, not a standalone `@playwright/test`
-      project — the repo has no dev‑server E2E harness and adding one is more
-      than this buys.)
-- [x] `docker compose config` validates; contexts, ports and the
-      `PUBLIC_SYNC_URL` build arg are correct and the project namespace is
-      `sheephead`. `sync-server/server.mjs` and `functions/games/[code].js`
-      pass `node --check`.
-- [ ] A live `docker compose up --build` (two browsers: create → join by code →
-      deal → watch bots) — not run in this environment (pulls base images).
-- [ ] `wrangler pages dev` against the public relay — not run (needs the CDN
-      relay + wrangler auth).
-- [ ] Manual 4‑real‑device smoke test — for the operator.
+      seats. Runs a full game (`handsToPlay` deals) to `gameOver`, asserting
+      the scored‑hand count, a zero‑sum tally, and the "Play again" button.
+      (A `vitest-browser-svelte` test, not a standalone `@playwright/test`
+      project — the repo has no dev‑server E2E harness and adding one buys
+      little here.)
+- [x] **`docker compose up --build`** run for real: both images build, both
+      containers come up healthy, the web container serves the SPA shell and
+      the SPA fallback (`/deep/route` → `200`), and `/games/:code` proxied to
+      the sync container round‑trips (`PUT` → `201`, `GET` → `200`, duplicate
+      `PUT` → `409`). `scripts/smoke-sync.mjs` against `ws://localhost:3030`
+      converges a doc between two independent repos through the relay.
+- [x] **`wrangler pages dev build --kv GAMES`** run for real: serves the SPA,
+      deep routes fall back to `index.html`, and the `functions/games/[code].js`
+      Function against the local `GAMES` KV round‑trips (`404` / `201` / `200` /
+      `409`). One harmless warning about the `_redirects` SPA rule — noted in
+      `docs/deploy-cloudflare.md`.
+- [ ] Manual 4‑real‑device smoke test — for the operator (physical hardware).
 
 ---
 

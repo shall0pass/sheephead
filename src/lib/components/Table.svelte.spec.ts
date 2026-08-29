@@ -1,7 +1,7 @@
 // Full-game integration test: the real Table UI + engine + Host, with one
 // "human" (this client, seat 0) driven by clicking the rendered controls and
-// the other four seats driven by the Host's bot runner. Plays a short game
-// (handsToPlay = 2) from the deal to gameOver.
+// the other four seats driven by the Host's bot runner. Plays a whole game
+// (the default four hands) from the deal to gameOver.
 
 import { page } from 'vitest/browser';
 import { describe, expect, it, vi } from 'vitest';
@@ -54,7 +54,6 @@ describe('Table.svelte — full game', () => {
 		const { store, presence, host } = setup();
 		store.change({ type: 'JoinSeat', seat: 0, name: 'You', actorId: 'me' });
 		for (const s of [1, 2, 3, 4] as const) store.change({ type: 'SetBot', seat: s, isBot: true });
-		store.handle.change((d) => (d.handsToPlay = 2));
 		presence.seen['me'] = Date.now();
 		host.start();
 		store.change({ type: 'StartHand', seed: 'e2e-seed' });
@@ -99,7 +98,7 @@ describe('Table.svelte — full game', () => {
 		host.stop();
 
 		expect(store.doc?.phase).toBe('gameOver');
-		expect(store.doc?.score.hands).toHaveLength(2);
+		expect(store.doc?.score.hands).toHaveLength(store.doc!.handsToPlay);
 		expect(store.doc?.score.tally.reduce((a, b) => a + b, 0)).toBe(0);
 		await expect.element(page.getByRole('button', { name: 'Play again' })).toBeInTheDocument();
 	});

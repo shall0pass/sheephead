@@ -131,6 +131,13 @@ npx wrangler pages dev build --kv GAMES        # or: npm run pages:dev
 
 `wrangler pages dev` serves `build/` + the Function + a **local** KV, so you
 can exercise short codes offline while sync still goes to the real relay.
+Verified end‑to‑end: the shell loads, deep routes fall back to `index.html`,
+and `PUT`/`GET`/`409` against `/games/:code` all work against the local KV.
+
+> `wrangler pages dev` prints a warning that the `_redirects` SPA rule
+> (`/* → /index.html 200`) is an "infinite loop". It is the standard
+> Cloudflare Pages SPA rewrite and is harmless — deep routes still return the
+> shell with `200`, and Cloudflare Pages proper does not warn.
 
 > Plain `npm run dev` is different: it proxies `/games` to `PUBLIC_SYNC_URL`'s
 > host, i.e. it expects the self-hosted `sync-server` (`npm run sync`). If your
