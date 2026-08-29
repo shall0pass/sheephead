@@ -1,6 +1,6 @@
 # Project goals
 
-My goal is to make a computer card game where 4 people can join and play together. If all 4 players can't join, computers need to play the hands automatically.  The card game is clabber and the rules are in the artifacts folder.
+My goal is to make a computer card game where multiple people can join and play together. The user cand decide how many users will play but will default to 5. If all players can't join, computers need to play the hands automatically.  The card game is sheephead and the rules are in the artifacts folder.
 
 ## Joining a game
 
@@ -18,5 +18,3 @@ There are playing card images in the artifacts.  The game should be played on a 
 
 I want to see fireworks for the winning team and tears of sadness for the losers.
 
-## Next steps
-2. On a mobile device, it would be nice to be able to drag my finger over the cards so i can see which one i'm selecting.  The touch targets are a little small.
