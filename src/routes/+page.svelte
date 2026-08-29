@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { dev } from '$app/environment';
-	import { pickBotNames } from '$lib/clabber';
+	import { pickBotNames } from '$lib/sheephead';
 	import JoinScreen from '$lib/components/JoinScreen.svelte';
 	import Lobby from '$lib/components/Lobby.svelte';
 	import Table from '$lib/components/Table.svelte';
@@ -48,7 +48,7 @@
 		host = h;
 
 		if (dev) {
-			(globalThis as Record<string, unknown>).__clabber = { store: s, presence: p, host: h };
+			(globalThis as Record<string, unknown>).__sheephead = { store: s, presence: p, host: h };
 		}
 	}
 
@@ -69,7 +69,7 @@
 		store = undefined;
 		bootError = '';
 		booting = false;
-		if (dev) delete (globalThis as Record<string, unknown>).__clabber;
+		if (dev) delete (globalThis as Record<string, unknown>).__sheephead;
 		// Drop the #code so a reload starts fresh at the join screen.
 		history.replaceState(null, '', location.pathname + location.search);
 	}

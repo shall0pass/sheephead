@@ -1,6 +1,6 @@
 <script lang="ts">
 	import Card from './Card.svelte';
-	import type { Card as CardT } from '$lib/clabber/types';
+	import type { Card as CardT } from '$lib/sheephead/types';
 
 	let {
 		cards,

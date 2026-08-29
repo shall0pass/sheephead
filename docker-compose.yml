@@ -1,4 +1,4 @@
-# Clabber - full stack (web app + Automerge sync server).
+# Sheephead - full stack (web app + Automerge sync server).
 #
 #   docker compose up --build
 #   -> open http://localhost:8080
@@ -7,9 +7,9 @@
 # build-time default baked into the web image. For a real deployment, put the
 # sync server behind TLS and rebuild the web image against its public URL:
 #
-#   CLABBER_SYNC_URL=wss://sync.example.com docker compose up --build
+#   SHEEPHEAD_SYNC_URL=wss://sync.example.com docker compose up --build
 #
-# (CLABBER_SYNC_URL is used only here, so it does not collide with the
+# (SHEEPHEAD_SYNC_URL is used only here, so it does not collide with the
 # PUBLIC_SYNC_URL in the local dev .env file.)
 
 services:
@@ -28,7 +28,7 @@ services:
     build:
       context: .
       args:
-        PUBLIC_SYNC_URL: ${CLABBER_SYNC_URL:-ws://localhost:3030}
+        PUBLIC_SYNC_URL: ${SHEEPHEAD_SYNC_URL:-ws://localhost:3030}
     ports:
       - '8080:80'
     depends_on:

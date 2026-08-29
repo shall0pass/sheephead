@@ -4,7 +4,7 @@
 // cleanly also broadcasts a "bye" so peers drop it immediately.
 
 import type { DocHandle } from '@automerge/automerge-repo';
-import type { GameDoc } from '$lib/clabber/types';
+import type { GameDoc } from '$lib/sheephead/types';
 
 const BEAT_MS = 4000;
 /** Missing this many ms of heartbeats ⇒ treated as gone (3 missed beats). */

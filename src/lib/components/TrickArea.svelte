@@ -1,7 +1,7 @@
 <script lang="ts">
 	import Card from './Card.svelte';
 	import { SUIT_SYMBOL, isRedSuit } from '$lib/cards/display';
-	import type { GameDoc, Seat } from '$lib/clabber/types';
+	import type { GameDoc, Seat } from '$lib/sheephead/types';
 
 	let {
 		doc,

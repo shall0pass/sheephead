@@ -1,9 +1,9 @@
 <script lang="ts">
-	import { SEATS, partnerSeat, teamOf } from '$lib/clabber/state';
-	import { sortHand } from '$lib/clabber/cards';
-	import { legalMoves } from '$lib/clabber/play';
-	import { trickPointsSoFar } from '$lib/clabber/score';
-	import type { Card as CardT, Seat } from '$lib/clabber/types';
+	import { SEATS, partnerSeat, teamOf } from '$lib/sheephead/state';
+	import { sortHand } from '$lib/sheephead/cards';
+	import { legalMoves } from '$lib/sheephead/play';
+	import { trickPointsSoFar } from '$lib/sheephead/score';
+	import type { Card as CardT, Seat } from '$lib/sheephead/types';
 	import type { GameStore } from '$lib/repo/gameStore.svelte';
 	import type { Presence } from '$lib/repo/presence.svelte';
 	import type { Host } from '$lib/repo/host';

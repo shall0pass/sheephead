@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
-  <title>Clabber</title>
+  <title>Sheephead</title>
   <rect width="64" height="64" rx="13" fill="#0a5c36" />
   <rect x="15" y="8" width="34" height="48" rx="6" fill="#ffffff" stroke="#d7d9df" stroke-width="1.5" />
   <path transform="translate(15 12) scale(0.34)"

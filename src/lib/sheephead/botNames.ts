@@ -12,7 +12,7 @@ export const BOT_NAMES: string[] = [
 	'Baron von Shuffle',
 	'Sneaky Pete',
 	'Disco Kevin',
-	'Madame Clabberella',
+	'Madame Woolgathering',
 	'Two-Ton Tony',
 	'Professor Pickles',
 	'Yeetus Maximus',

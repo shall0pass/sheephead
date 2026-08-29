@@ -1,8 +1,8 @@
-# Clabber sync server
+# Sheephead sync server
 
 A standalone [Automerge](https://automerge.org) sync server: it relays sync
 messages between players' browsers and keeps a durable copy of every game
-document on disk. It contains **no Clabber game logic**.
+document on disk. It contains **no Sheephead game logic**.
 
 The front-end app is deployed separately as a static site and is pointed at
 this server through the `PUBLIC_SYNC_URL` build-time variable (see the repo
@@ -31,8 +31,8 @@ From the repo root you can also run `npm run sync`.
 ## Deploy
 
 ```sh
-docker build -t clabber-sync ./sync-server
-docker run -p 3030:3030 -v clabber-data:/data clabber-sync
+docker build -t sheephead-sync ./sync-server
+docker run -p 3030:3030 -v sheephead-data:/data sheephead-sync
 ```
 
 Put it behind TLS (e.g. a reverse proxy) so browsers on the deployed static

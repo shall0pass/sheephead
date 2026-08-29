@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { SEATS, partnerSeat, pickBotNames } from '$lib/clabber';
-	import type { Seat as SeatIndex } from '$lib/clabber/types';
+	import { SEATS, partnerSeat, pickBotNames } from '$lib/sheephead';
+	import type { Seat as SeatIndex } from '$lib/sheephead/types';
 	import type { GameStore } from '$lib/repo/gameStore.svelte';
 	import type { Presence } from '$lib/repo/presence.svelte';
 	import SeatSlot from './Seat.svelte';
@@ -9,7 +9,7 @@
 	let { store, presence, onleave }: { store: GameStore; presence: Presence; onleave: () => void } =
 		$props();
 
-	const NAME_KEY = 'clabber:name';
+	const NAME_KEY = 'sheephead:name';
 	let preferredName = $state(readName());
 	function readName(): string {
 		try {
@@ -96,7 +96,7 @@
 	</div>
 
 	<header class="flex flex-col items-center gap-1">
-		<h1 class="text-xl font-bold tracking-wide">Clabber lobby</h1>
+		<h1 class="text-xl font-bold tracking-wide">Sheephead lobby</h1>
 		{#if store.code && store.code.length <= 8}
 			<button
 				onclick={copyLink}

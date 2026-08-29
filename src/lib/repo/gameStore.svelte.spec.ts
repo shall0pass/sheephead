@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { Repo, type DocHandle } from '@automerge/automerge-repo';
-import { createGame } from '$lib/clabber';
-import type { GameDoc } from '$lib/clabber/types';
+import { createGame } from '$lib/sheephead';
+import type { GameDoc } from '$lib/sheephead/types';
 import { GameStore } from './gameStore.svelte';
 
 const tick = () => new Promise((r) => setTimeout(r, 0));

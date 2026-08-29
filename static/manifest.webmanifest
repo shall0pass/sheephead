@@ -1,7 +1,7 @@
 {
-	"name": "Clabber",
-	"short_name": "Clabber",
-	"description": "Play Clabber with friends around one green table.",
+	"name": "Sheephead",
+	"short_name": "Sheephead",
+	"description": "Play Sheephead with friends around one green table.",
 	"id": "/",
 	"start_url": "/",
 	"scope": "/",

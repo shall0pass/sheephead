@@ -1,4 +1,4 @@
-// The 24-card Clabber deck plus the ranking and point rules.
+// The 24-card Sheephead deck plus the ranking and point rules.
 //
 // Ranks and points (from the rules):
 //   Non-trump  A 10 K Q J 9   (A=11 10=10 K=4 Q=3 J=2 9=0)

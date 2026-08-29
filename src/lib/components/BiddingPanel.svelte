@@ -1,10 +1,10 @@
 <script lang="ts">
 	import Card from './Card.svelte';
-	import { legalBids } from '$lib/clabber/bidding';
-	import { suitOf } from '$lib/clabber/cards';
+	import { legalBids } from '$lib/sheephead/bidding';
+	import { suitOf } from '$lib/sheephead/cards';
 	import { SUIT_NAME, SUIT_SYMBOL, isRedSuit } from '$lib/cards/display';
 	import type { GameStore } from '$lib/repo/gameStore.svelte';
-	import type { Bid, Seat } from '$lib/clabber/types';
+	import type { Bid, Seat } from '$lib/sheephead/types';
 
 	let { store }: { store: GameStore } = $props();
 

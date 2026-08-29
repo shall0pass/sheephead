@@ -12,7 +12,7 @@ Only one player can play a card at a time.
 
 ## Cards
 
-There are playing card images in the artifacts.  The game should be played on a green table.  Players should be shown a round table and the user should be seated at the bottom of the table.  The person across (at the top) is the users partner.
+There are playing card images in the artifacts.  The game should be played on a green table.  Players should be shown a round table and the user should be seated at the bottom of the table.  In sheephead the picker's partner is chosen each hand by the called ace and stays secret until it comes out, so no seat is permanently the partner; highlight the partner only once it is public knowledge (see `docs/implementation-plan.md` §3.5).
 
 ## Winning
 

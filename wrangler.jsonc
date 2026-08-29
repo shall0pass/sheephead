@@ -1,6 +1,6 @@
 {
 	"$schema": "./node_modules/wrangler/config-schema.json",
-	"name": "clabber",
+	"name": "sheephead",
 	"pages_build_output_dir": "./build",
 	"compatibility_date": "2026-08-28"
 

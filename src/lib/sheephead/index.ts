@@ -1,4 +1,4 @@
-// Public surface of the Clabber rules engine.
+// Public surface of the Sheephead rules engine.
 
 export * from './types';
 export * from './cards';

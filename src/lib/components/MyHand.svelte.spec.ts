@@ -2,7 +2,7 @@ import { page } from 'vitest/browser';
 import { describe, expect, it, vi } from 'vitest';
 import { render } from 'vitest-browser-svelte';
 import MyHand from './MyHand.svelte';
-import type { Card } from '$lib/clabber/types';
+import type { Card } from '$lib/sheephead/types';
 
 const cards: Card[] = ['AS', 'KS', '9H', 'AD'];
 

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { Repo, type DocHandle } from '@automerge/automerge-repo';
-import { createGame, SEATS } from '$lib/clabber';
-import type { GameDoc } from '$lib/clabber/types';
+import { createGame, SEATS } from '$lib/sheephead';
+import type { GameDoc } from '$lib/sheephead/types';
 import { GameStore } from './gameStore.svelte';
 import { Presence } from './presence.svelte';
 import { Host } from './host';

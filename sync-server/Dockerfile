@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 #
-# The Clabber Automerge sync server: a dumb relay + on-disk document store,
+# The Sheephead Automerge sync server: a dumb relay + on-disk document store,
 # plus the tiny join-code registry. Built independently of the web app.
 
 FROM node:22-alpine

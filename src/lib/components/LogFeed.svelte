@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { PlayerSlot } from '$lib/clabber/types';
+	import type { PlayerSlot } from '$lib/sheephead/types';
 
 	let { log = [], players = [] }: { log?: string[]; players?: (PlayerSlot | null)[] } = $props();
 

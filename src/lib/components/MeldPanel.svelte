@@ -1,8 +1,8 @@
 <script lang="ts">
-	import { detectMelds, selectBestMelds } from '$lib/clabber/meld';
+	import { detectMelds, selectBestMelds } from '$lib/sheephead/meld';
 	import { SUIT_SYMBOL } from '$lib/cards/display';
 	import type { GameStore } from '$lib/repo/gameStore.svelte';
-	import type { MeldClaim, MeldKind, Seat } from '$lib/clabber/types';
+	import type { MeldClaim, MeldKind, Seat } from '$lib/sheephead/types';
 
 	let { store }: { store: GameStore } = $props();
 

@@ -27,7 +27,7 @@ export function getRepo(): RepoType {
 	if (!repo) {
 		repo = new Repo({
 			network: [new WebSocketClientAdapter(PUBLIC_SYNC_URL)],
-			storage: new IndexedDBStorageAdapter('clabber')
+			storage: new IndexedDBStorageAdapter('sheephead')
 		});
 	}
 	return repo;

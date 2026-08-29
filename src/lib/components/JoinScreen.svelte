@@ -48,7 +48,7 @@
 
 <div class="flex min-h-screen items-center justify-center bg-green-900 p-6 text-white">
 	<div class="w-full max-w-sm rounded-2xl bg-green-950/60 p-8 shadow-xl ring-1 ring-white/10">
-		<h1 class="mb-1 text-center text-3xl font-bold tracking-wide">Clabber</h1>
+		<h1 class="mb-1 text-center text-3xl font-bold tracking-wide">Sheephead</h1>
 		<p class="mb-6 text-center text-sm text-white/60">
 			{#if codesUsable}
 				Enter your friends' secret code to join.

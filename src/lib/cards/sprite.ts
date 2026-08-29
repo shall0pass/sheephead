@@ -11,7 +11,7 @@
 // Cards render as a CSS background sprite (see Card.svelte): one request each,
 // scales cleanly to any size.
 
-import type { Card, Rank, Suit } from '$lib/clabber/types';
+import type { Card, Rank, Suit } from '$lib/sheephead/types';
 
 export const FACE_SHEET = '/cards/faces.svg';
 export const BACK_SHEET = '/cards/back.svg';

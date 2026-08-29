@@ -5,13 +5,13 @@
 //   store.mySeat   - which seat this tab occupies, or null
 
 import type { AnyDocumentId, DocHandle } from '@automerge/automerge-repo';
-import type { Action } from '$lib/clabber/actions';
-import type { GameDoc, Seat } from '$lib/clabber/types';
-import { createGame, reduce } from '$lib/clabber';
+import type { Action } from '$lib/sheephead/actions';
+import type { GameDoc, Seat } from '$lib/sheephead/types';
+import { createGame, reduce } from '$lib/sheephead';
 import { claimCode, makeCode, resolveCode } from './directory';
 import { getRepo } from './repo';
 
-const CLIENT_ID_KEY = 'clabber:clientId';
+const CLIENT_ID_KEY = 'sheephead:clientId';
 
 /** A per-tab identity, stable across reloads. Determines which seat is "me". */
 export function getClientId(): string {

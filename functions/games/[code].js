@@ -1,4 +1,4 @@
-// Cloudflare Pages Function — the Clabber join-code registry.
+// Cloudflare Pages Function — the Sheephead join-code registry.
 //
 // Route:  /games/:code
 //   GET  → 200 { code, url, createdAt } | 404

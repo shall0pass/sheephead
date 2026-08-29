@@ -14,9 +14,9 @@
 
 import type { GameStore } from './gameStore.svelte';
 import type { Presence } from './presence.svelte';
-import { HOST_STALE_MS, nextBotAction, pickHost } from '$lib/clabber/host';
-import { SEATS } from '$lib/clabber/state';
-import type { Seat } from '$lib/clabber/types';
+import { HOST_STALE_MS, nextBotAction, pickHost } from '$lib/sheephead/host';
+import { SEATS } from '$lib/sheephead/state';
+import type { Seat } from '$lib/sheephead/types';
 
 export interface HostOptions {
 	/** Humanising think-time bounds for a bot move (ms). */

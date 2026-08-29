@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { dev } from '$app/environment';
 	import Card from '$lib/components/Card.svelte';
-	import type { Card as CardT, Rank, Suit } from '$lib/clabber/types';
+	import type { Card as CardT, Rank, Suit } from '$lib/sheephead/types';
 
 	const SUITS: { id: Suit; name: string }[] = [
 		{ id: 'S', name: 'Spades' },
@@ -23,7 +23,7 @@
 			{Math.round(height)}px
 		</label>
 
-		<p>The 24 cards used in Clabber (A K Q J 10 9 of each suit):</p>
+		<p>The 24 cards used in Sheephead (A K Q J 10 9 of each suit):</p>
 		{#each SUITS as suit (suit.id)}
 			<section>
 				<h2>{suit.name}</h2>

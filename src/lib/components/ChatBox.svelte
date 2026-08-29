@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { tick } from 'svelte';
-	import { partnerSeat, teamOf } from '$lib/clabber/state';
-	import type { Seat } from '$lib/clabber/types';
+	import { partnerSeat, teamOf } from '$lib/sheephead/state';
+	import type { Seat } from '$lib/sheephead/types';
 	import type { GameStore } from '$lib/repo/gameStore.svelte';
 
 	let { store }: { store: GameStore } = $props();
@@ -10,7 +10,7 @@
 	const messages = $derived(doc?.chat ?? []);
 	const mySeat = $derived(store.mySeat);
 
-	const NAME_KEY = 'clabber:name';
+	const NAME_KEY = 'sheephead:name';
 	function myName(): string {
 		if (mySeat != null) return doc?.players[mySeat]?.name ?? 'Player';
 		try {

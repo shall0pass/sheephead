@@ -1,7 +1,7 @@
 /// <reference types="@sveltejs/kit" />
 /// <reference lib="webworker" />
 
-// A small offline cache so Clabber is installable and its shell loads without a
+// A small offline cache so Sheephead is installable and its shell loads without a
 // network. Live play still needs the sync-server WebSocket; that traffic is
 // cross-origin and the worker never touches it.
 
@@ -9,7 +9,7 @@ import { build, files, version } from '$service-worker';
 
 const sw = self as unknown as ServiceWorkerGlobalScope;
 
-const CACHE = `clabber-${version}`;
+const CACHE = `sheephead-${version}`;
 // `files` includes the icons and manifest from static/; `build` is the app JS/CSS.
 const PRECACHE = [...build, ...files];
 

@@ -1,8 +1,8 @@
-// Clabber sync server.
+// Sheephead sync server.
 //
 // A dumb Automerge relay: it forwards sync messages between the players'
 // browsers and keeps a durable copy of every document on disk so a game
-// survives everyone closing their tab. It has NO knowledge of Clabber rules,
+// survives everyone closing their tab. It has NO knowledge of Sheephead rules,
 // so it never needs redeploying when the game changes.
 //
 // It also keeps a tiny "join code -> document url" registry (games.json) so
@@ -100,7 +100,7 @@ const server = http.createServer((req, res) => {
 	if (m) return handleRegistry(req, res, decodeURIComponent(m[1]));
 
 	res.writeHead(426, { 'content-type': 'text/plain' });
-	res.end('Clabber Automerge sync server — connect over WebSocket.');
+	res.end('Sheephead Automerge sync server — connect over WebSocket.');
 });
 
 const wss = new WebSocketServer({ server });
@@ -114,7 +114,7 @@ const repo = new Repo({
 
 server.listen(PORT, () => {
 	console.log(
-		`clabber sync server listening on :${PORT}  (peer ${repo.peerId}, data: ${DATA_DIR}, ` +
+		`sheephead sync server listening on :${PORT}  (peer ${repo.peerId}, data: ${DATA_DIR}, ` +
 			`${Object.keys(games).length} game codes)`
 	);
 });

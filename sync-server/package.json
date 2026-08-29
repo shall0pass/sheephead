@@ -1,9 +1,9 @@
 {
-	"name": "clabber-sync-server",
+	"name": "sheephead-sync-server",
 	"private": true,
 	"version": "0.0.1",
 	"type": "module",
-	"description": "Automerge relay + durable store for Clabber games. Contains no game logic.",
+	"description": "Automerge relay + durable store for Sheephead games. Contains no game logic.",
 	"scripts": {
 		"start": "node server.mjs",
 		"dev": "node --watch server.mjs"

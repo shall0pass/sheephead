@@ -1,4 +1,4 @@
-// Core Clabber types. Everything here is plain JSON so a `GameDoc` can live
+// Core Sheephead types. Everything here is plain JSON so a `GameDoc` can live
 // directly inside an Automerge document (Phase 3).
 
 export type Suit = 'S' | 'H' | 'D' | 'C';

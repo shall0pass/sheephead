@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { teamOf } from '$lib/clabber/state';
+	import { teamOf } from '$lib/sheephead/state';
 	import { SUIT_NAME } from '$lib/cards/display';
 	import type { GameStore } from '$lib/repo/gameStore.svelte';
 

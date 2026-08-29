@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 #
-# The Clabber web app: a static single-page app built with SvelteKit
+# The Sheephead web app: a static single-page app built with SvelteKit
 # (adapter-static) and served by nginx. The Automerge sync server is a
 # separate image - see sync-server/Dockerfile and docker-compose.yml.
 

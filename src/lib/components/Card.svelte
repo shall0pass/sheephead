@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { Card } from '$lib/clabber/types';
+	import type { Card } from '$lib/sheephead/types';
 	import { BACK_SHEET, CARD_RATIO, FACE_GRID, FACE_SHEET, facePosition } from '$lib/cards/sprite';
 
 	let {

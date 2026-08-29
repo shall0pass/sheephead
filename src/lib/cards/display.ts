@@ -1,4 +1,4 @@
-import type { Suit } from '$lib/clabber/types';
+import type { Suit } from '$lib/sheephead/types';
 
 export const SUIT_NAME: Record<Suit, string> = {
 	S: 'Spades',
