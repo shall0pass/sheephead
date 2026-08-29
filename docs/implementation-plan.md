@@ -686,46 +686,193 @@ Phase I.
 
 ## 12. Risks & open questions
 
-- **Game length / "winning team" — decided.** A full game is **4 hands**
-  (`handsToPlay = 4`); after the fourth scored hand, positive cumulative
-  tallies win and negative ones lose. See §8.6.
-- **All‑pass resolution.** `artifacts/game_rules.md` says the hand "becomes a
-  leaster, or depending how you play, a doubler" — it never mentions a re‑deal.
-  v1 uses a same‑dealer re‑deal purely as a neutral placeholder so the deferred
-  variants (**leaster** — play for fewest points; **doubler** — re‑deal with the
-  next hand's stakes doubled; **"stick the dealer"** — dealer is forced to pick)
-  aren't on the critical path. Two guards are needed: the dealer bot must _pick_
-  when it is the last undecided seat (otherwise five passing bots re‑deal
-  forever), and `redeal` must not advance `handNumber` (already specified).
-  Revisit once a variant is chosen.
-- **Trust model.** Hands _and the hidden partner_ are readable in the raw doc.
-  If this ever needs to be real, revisit per‑seat encryption keyed off the game
-  code — designed around, not built.
-- **Called‑ace edge cases.** The "under" / "call a ten" / "trump under"
-  branches in `partner.ts` are fiddly and lightly covered by real play; they
-  get explicit unit tests and a note in the log feed so a confused player can
-  see what happened.
-- **The rules doc is a lossy web scrape.** `artifacts/game_rules.md` references
-  images that did not survive — `rank2` (the 14 trump in order), `fail` (the 18
-  fail cards in order) and `points2` (the point table). §5 fills these from the
-  universal Sheepshead orderings (trump `Q Q Q Q J J J J` then `A T K 9 8 7` of
-  ♦; fail `A T K 9 8 7`; `A`=11 `T`=10 `K`=4 `Q`=3 `J`=2, rest 0; 120 total).
-  Worth confirming against a second source (pagat.com) before Phase B.
+Every *rules* question below has been checked against two outside sources — the
+Pagat 5‑player Sheepshead page (`pagat.com/schafkopf/shep.html`) and the
+Wikipedia "Sheepshead (card game)" article (its text is reproduced in
+`artifacts/game_rules.md`). Those are marked **resolved**; what's left in §12.2
+is project/infrastructure risk, not a rules gap.
+
+### 12.1 Rules questions — resolved against the sources
+
+- **Trump order, fail order, point values — resolved.** Both sources agree, so
+  the missing `rank2` / `fail` / `points2` scrape images are fully recovered:
+  trump high→low `Q♣ Q♠ Q♥ Q♦ J♣ J♠ J♥ J♦ A♦ T♦ K♦ 9♦ 8♦ 7♦` (14 cards); each
+  fail suit `A T K 9 8 7`; `A`=11 `T`=10 `K`=4 `Q`=3 `J`=2, `9/8/7`=0; 120
+  total; **no last‑trick bonus** in the 5‑hand game (the last‑trick counter is a
+  4‑player 24‑card "Sheep Head" thing only). §5 stands as written.
+
+- **All‑pass resolution — resolved; pick one for v1.1.** The real options when
+  nobody picks are **leaster** (no picker/partner, *fewest* card points wins,
+  the blind goes to the last‑trick winner), **doubler** (redeal; the *next*
+  scored hand pays double), and **forced pick / "stick the dealer"** (the last
+  seat must pick). Rarer cousins (mittler, schneidster, moster, schwanzer) all
+  hang off the same "no picker" branch. v1's same‑dealer `redeal` placeholder is
+  a neutral stand‑in for any of them, and its two guards are enough — the dealer
+  bot must _pick_ when last undecided (else five passing bots redeal forever),
+  and `redeal` must not advance `handNumber` (both specified). **Forced pick is
+  the cheapest first upgrade** (no new scoring path).
+
+- **Called‑ace edge cases — resolved.** All three `partner.ts` branches are
+  confirmed by the sources:
+  - picker's only remaining fail cards are aces → **"unknown" / under**: lay one
+    card face down and call any *unseen* fail ace; the face‑down card is shown
+    only to the trick winner and **cannot win the trick**, though its points
+    still count at hand end.
+  - picker holds **all three** fail aces → call a fail **ten** instead; the
+    picker must then hold that suit's **ace** back and play it when the suit is
+    led, and — unlike the "unknown" — the called **ten can win its trick**.
+  - picker has **no fail at all** → call a suit with a face‑down **trump** as the
+    under (same reveal / cannot‑win rule as the "unknown").
+  - the partner must play the called ace on the **first lead of that suit even
+    while holding other cards of it**; the picker must keep one fail card of the
+    called suit and may play it only when that suit is led; both bindings lift on
+    trick 6. Keep the explicit unit tests and the log‑feed note so a confused
+    player can see what happened.
+
+- **Buried cards vs. the no‑tricker rule — one real source conflict, decided.**
+  Wikipedia says the bury counts for the picker "**if the picker's side takes at
+  least one trick**"; `artifacts/game_rules.md` is silent and ordinary table
+  play just always counts it. §5 always counts the bury, including for a
+  zero‑trick picker (the "King in the bury → `oppPoints = 116`" test). This
+  changes **no game‑point outcome** — a no‑tricker is scored by trick count with
+  a fixed −9 / 0 / +3 award — only the card‑point breakdown and the "120
+  conserved" invariant. **v1 keeps the always‑count rule** (simpler,
+  self‑consistent) and shows it in the hand result. Revisit only if a house rule
+  wants the Wikipedia reading.
+
+- **Schneider / no‑tricker thresholds — resolved.** A side is *schneidered* at
+  **≤ 30 card points**, so the picker schneiders the opponents at picker ≥ 90
+  and is schneidered at picker ≤ 30; **60–60 is a picker loss** (the picker
+  needs 61). §5's classification order and boundaries (30/31, 60/61, 89/90) are
+  right. The Wikipedia *table* prints the top tier as "91–120", but its own note
+  ("opponents are required to get only 30") resolves that to the 90 boundary v1
+  uses.
+
+- **Scoring table — resolved.** §6 (`+2/+1/−1` · `+4/+2/−2` · `+6/+3/−3` ·
+  `−2/−1/+1` · `−4/−2/+2` · `−9/0/+3`, plus the alone column `±4/±8/±12` vs
+  `∓1/∓2/∓3`) matches `artifacts/game_rules.md` clause‑for‑clause, and the alone
+  column matches Wikipedia's table exactly. Wikipedia's *partner* table differs
+  in two spots and both are house‑rule forks, not corrections: it penalises the
+  partner on a no‑tricker loss (`−6/−3/+3` rather than `−9/0/+3`), and its two
+  loss rows already fold in "double on the bump". v1 ships the `game_rules.md`
+  numbers; `doc.doubleOnTheBump` stays the first planned toggle (§6, §13).
+
+### 12.2 Project / infrastructure risks — still live
+
+- **Game length / "winning team" — decided, and not a rules question.** Real
+  Sheepshead is played for money over an open‑ended session, so there is no
+  canonical hand count to look up. `handsToPlay = 4` is the stakeholder's call;
+  after the fourth scored hand a positive cumulative tally wins (fireworks),
+  negative loses (tears). See §8.6.
+- **Trust model.** Full hands _and the resolved partner seat_ are readable in
+  the raw Automerge doc. Per‑seat encryption keyed off the game code is designed
+  around, not built. Unchanged risk.
+- **"No ace, no face, no trump, no count" redeal.** A second, unrelated redeal
+  trigger exists in the rules — a player may demand a redeal on a hand with no
+  ace, no face card, no trump and no counter. v1 omits it; the `redeal` phase is
+  wired only for the all‑pass case. Cheap to add later behind the same phase.
 - **Host election races** on flaky networks — mitigated by idempotent,
-  precondition‑guarded actions; covered by a focused chromium test (carried
-  over from the Clabber build).
-- **Automerge wasm on static hosts** — ensure `.wasm` is served with the right
-  MIME type; verify on the CDN.
-- **Bot strength.** A weak picker bot makes for dull games; the pick/bury/call
-  heuristics may need a tuning pass after the first full‑game simulations.
+  precondition‑guarded actions; covered by a chromium test carried over from the
+  Clabber build.
+- **Automerge wasm on static hosts** — ensure `.wasm` is served as
+  `application/wasm`; verify on the CDN.
+- **Bot strength.** The pick/bury/call heuristics are untuned; a weak picker bot
+  makes for dull games, so expect a tuning pass after the first full‑game
+  simulations.
 
 ## 13. Out of scope for v1
 
-Leaster / stick‑the‑dealer / doublers; blitz, cracking and "double on the bump"
-stake multipliers; calling a renege on another player; the Jack‑of‑Diamonds
-partner variant; 3/4/6/7/8‑player tables; spectator seats beyond "watching";
-accounts, matchmaking, a lobby list; mobile app packaging; sound effects;
-tournament / round‑robin scoring.
+Grouped so a later pick is easy. Nothing here blocks the core 5‑player
+called‑ace game; each item is a clean addition on top of it.
+
+### 13.1 "No picker" rule variants
+
+- **Leaster** — no picker/partner, fewest card points wins, blind to the
+  last‑trick winner (house‑variable: some give it to a dealer‑chosen trick, some
+  set it aside; some require a trick to win). Needs a `leaster` phase and its own
+  scoring path.
+- **Doubler** — redeal with the next scored hand at 2× stakes; needs a
+  `stakeMultiplier` on the doc and every award multiplied through.
+- **Forced pick / "stick the dealer"** — last seat must pick; the smallest
+  change (no new scoring) and the most likely first addition.
+- **Schiller** — the *first* seat after the dealer is forced to pick;
+  traditionally one Schiller hand is played to end a session.
+- **Mittler / schneidster / moster / schwanzer (show‑down)** — exotic no‑picker
+  scorings (median score wins / closest to 30 / most‑points pays / reveal hands
+  and the highest picks pays the table); not planned.
+- **The pot** — one game point is seeded into a pot on a leaster (or every
+  hand, in cash play); the picking team takes it on a win and pays in on a loss.
+  Ties in with money play (§13.5) and would need a `pot` field on the doc.
+
+### 13.2 Partner & stake variants
+
+- **Jack‑of‑Diamonds partner** — auto‑partner, no called ace, plus its
+  "picker holds the J♦ → go alone / call up a jack" sub‑rules, and the newer
+  "hold the J♦, still call a fail ace" hybrid.
+- **Call an ace you actually hold** and be your own secret partner.
+- **"Double on the bump"** — doubled penalty when the picking team loses;
+  planned as the `doc.doubleOnTheBump` lobby toggle (§6).
+- **"Picker must take a trick"** — a trickless picking team loses a fixed large
+  amount (e.g. picker −18 / partner 0 / opponents +6) regardless of card points;
+  a stricter cousin of the §6 no‑tricker row.
+- **Cracking** — an opponent knocks to double the stakes, with
+  **re‑crack / crack‑back** (partner or picker, ×4), **castrating** (a third
+  player, ×8), and **crack‑around‑the‑corner** (partner re‑cracks and outs
+  themselves). Each has its own timing window (in the aces game, after the ace
+  is named, before the first card) and a house cap on the multiplier.
+- **Blitzing** — a player reveals a matched pair to double the stakes: both
+  black queens (standard), both black jacks, the two middle jacks, or all four
+  jacks, depending on house rule.
+- **Calling "sheepshead"** — a contract to take every trick (double a
+  no‑tricker on success, pay double on any miss); almost always played alone.
+- **Spitz** (7♦ promoted to 2nd — or 1st — in the trump order) and
+  **clubs‑are‑trump** regional orderings; also per‑group reshuffles of the
+  queen/jack strengths.
+
+### 13.3 Table sizes & seating
+
+- **2 / 3 / 4 / 6 / 7 / 8‑player** tables — each has its own deck size, blind
+  size and deal (e.g. 3‑hand = 10 cards + a 2‑card blind; 4‑hand "Sheep Head" =
+  24 cards, jacks over queens, hearts trump, a last‑trick counter). v1 is
+  exactly 5.
+- **6th player sits out the deal** (the classic 5‑active‑of‑6 arrangement).
+- **Spectator seats** beyond passively watching a game you are not seated in —
+  a spectator list, spectator chat, join‑the‑next‑hand queueing.
+- **Mid‑game seat changes** — swapping seats, a human taking over a bot seat, or
+  a sixth player buying in, once a hand is already running.
+
+### 13.4 Enforcement & fair play
+
+- **Calling a renege** on another player — v1 simply never offers an illegal
+  card, so honest clients cannot renege; there is no accusation / forfeit flow.
+- **Server‑side rules enforcement** and defence against a client editing the raw
+  doc (see the trust model, §3.4 / §12.2).
+- **Per‑seat encryption** of hands, bury and the partner seat.
+- **"No ace, no face, no trump, no count"** redeal on request (§12.2).
+- **The physical cut** by the player to the dealer's right — cosmetic under a
+  seeded shuffle; omitted (§5), not surfaced in the UI.
+- **Table talk / collusion detection** — out of scope; a friendly‑game
+  assumption like the trust model.
+- **Turn clock / auto‑pass** for a slow but still‑connected human — v1 only
+  covers the *disconnected* case via the presence reconciler (§3.3).
+- **Take‑backs / undo** of a played or buried card — there are none; a play is
+  committed the moment it lands in the doc.
+
+### 13.5 Product surface
+
+- Accounts, profiles, matchmaking, a public lobby / game list.
+- Tournament, round‑robin or across‑session scoring ("play to N points") — v1 is
+  a fixed `handsToPlay` then fireworks / tears.
+- **Money play** — game points as a currency unit with a running per‑player
+  ledger, settle‑up screen and the pot mechanics (§13.1).
+- Native mobile app packaging (the PWA install is kept).
+- Sound effects / music.
+- In‑game statistics, hand‑history export, replays.
+- Localisation / i18n; the UI ships English‑only.
+- Table cosmetics — felt colours, card‑back choices, avatars, emote reactions
+  beyond text chat.
+- Configurable game rules UI beyond the seat count — every variant above would
+  need lobby toggles and a saved house‑rules profile.
 
 Table chat **is** kept: `doc.chat` (a `ChatMessage[]` capped at 100, appended
 via `SendChat`), rendered by `ChatBox.svelte` in both the lobby and the game.
