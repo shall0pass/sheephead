@@ -1,6 +1,6 @@
 // Heuristic computer player. Pure functions: given a document (and a seat whose
-// turn it is), return a legal action. No search, just rules of thumb. Phase F
-// tunes these; here they only need to always produce a legal move.
+// turn it is), return a legal action. No search, just rules of thumb — good
+// enough for a friendly table, tuned in Phase F.
 
 import type { CallPayload } from './actions';
 import type { Card, GameDoc, Seat } from './types';
@@ -19,15 +19,16 @@ import { isLastToDecide } from './picking';
 import { legalMoves } from './play';
 import { isPickerTeam } from './state';
 
+const trumpsIn = (hand: readonly Card[]) => hand.filter(isTrump);
+
 // --- picking ------------------------------------------------------------
 
 /** Rough "how good is this hand to play as picker" score. */
 function pickStrength(hand: readonly Card[]): number {
 	let s = 0;
-	let trumps = 0;
+	const trumps = trumpsIn(hand).length;
 	for (const c of hand) {
 		if (isTrump(c)) {
-			trumps++;
 			s += 2 + trumpRank(c) / 3;
 			if (rankOf(c) === 'Q') s += 3;
 		} else if (rankOf(c) === 'A') {
@@ -71,10 +72,17 @@ export function chooseBury(doc: GameDoc): [Card, Card] {
 export function chooseCall(doc: GameDoc): CallPayload {
 	const opts = legalCalls(doc);
 	const hand = doc.hands[doc.picker as Seat];
-	const failLen = (s: string) => hand.filter((c) => !isTrump(c) && suitOf(c) === s).length;
 
+	// Go alone only with a monster: both black queens and a fat trump holding.
+	const hasBlackQueens = hand.includes('QC') && hand.includes('QS');
+	if (hasBlackQueens && trumpsIn(hand).length >= 6 && opts.some((o) => o.kind === 'alone')) {
+		return { alone: true };
+	}
+
+	const failLen = (s: string) => hand.filter((c) => !isTrump(c) && suitOf(c) === s).length;
 	const aces = opts.filter((o) => o.kind === 'ace');
 	if (aces.length) {
+		// Call into the suit we are shortest in, so the ace comes home late.
 		const best = aces.reduce((x, y) => (failLen(y.suit) < failLen(x.suit) ? y : x));
 		return { suit: best.suit };
 	}
@@ -103,26 +111,46 @@ export function chooseCard(doc: GameDoc, seat: Seat): Card {
 	if (!t) return moves[0];
 
 	const value = (c: Card) => cardPoints(c);
-	const cheapest = [...moves].sort((a, b) => value(a) - value(b) || strength(a) - strength(b));
+	const cheap = [...moves].sort((a, b) => value(a) - value(b) || strength(a) - strength(b));
+	const onPickerTeam = isPickerTeam(doc, seat);
 
-	if (t.plays.length === 0) {
-		const nonTrump = cheapest.filter((c) => !isTrump(c));
-		return nonTrump[0] ?? cheapest[0];
-	}
+	if (t.plays.length === 0) return chooseLead(doc, cheap, onPickerTeam);
 
 	const led = leadSuitOf(t.plays[0].card);
 	const contenders = t.plays.filter((p) => !p.faceDown);
 	const winning = contenders.reduce((a, b) => (beats(b.card, a.card, led) ? b : a));
-	const teammateWinning =
-		winning.seat !== seat && isPickerTeam(doc, winning.seat) === isPickerTeam(doc, seat);
+	const last = t.plays.length === 4;
+	const teammateWinning = winning.seat !== seat && isPickerTeam(doc, winning.seat) === onPickerTeam;
 	const canBeat = moves.filter((c) => beats(c, winning.card, led));
 
 	if (teammateWinning) {
-		// Schmear: hand the most points we safely can.
-		return [...moves].sort((a, b) => value(b) - value(a))[0];
+		// Schmear generously only when the trick is safe — we are last, or the
+		// teammate is winning on trump. Otherwise give a middling card.
+		const safe = last || isTrump(winning.card);
+		const byValue = [...moves].sort((a, b) => value(b) - value(a));
+		return safe ? byValue[0] : (cheap.find((c) => value(c) > 0) ?? cheap[0]);
 	}
 	if (canBeat.length) {
+		// Take it as cheaply as possible; don't crash a big trump on a cheap trick.
 		return canBeat.sort((a, b) => value(a) - value(b) || strength(a) - strength(b))[0];
 	}
-	return cheapest[0];
+	return cheap[0];
+}
+
+function chooseLead(doc: GameDoc, cheap: Card[], onPickerTeam: boolean): Card {
+	const trump = cheap.filter(isTrump);
+	const nonTrump = cheap.filter((c) => !isTrump(c));
+
+	if (onPickerTeam && trump.length >= 3 && trump.length >= nonTrump.length) {
+		// Pull the opponents' trump: lead a strong one.
+		return [...trump].sort((a, b) => trumpRank(b) - trumpRank(a))[0];
+	}
+
+	if (!onPickerTeam) {
+		// Lead a fail ace to force a trump or bleed points off the picker's side.
+		const ace = nonTrump.find((c) => rankOf(c) === 'A' && c !== doc.calledCard);
+		if (ace) return ace;
+	}
+
+	return nonTrump[0] ?? cheap[0];
 }
