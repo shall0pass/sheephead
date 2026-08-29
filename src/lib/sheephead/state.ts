@@ -35,7 +35,7 @@ export function createGame(code: string, now: number = Date.now()): GameDoc {
 		dealer: 0,
 		seed: '',
 		handNumber: 0,
-		handsToPlay: 10,
+		handsToPlay: 4,
 		hands: [[], [], [], [], []],
 		blind: [],
 		picking: null,
