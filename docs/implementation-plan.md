@@ -487,6 +487,15 @@ Deleted vs the Clabber tree: `src/lib/clabber/` (renamed), `meld.ts` +
 Each phase ends green: `npm run lint`, `npm run check`, `npm test`,
 `npm run build`.
 
+**As built:** Phase A shipped on its own; Phases B–E landed as one
+"rules engine" commit (the Clabber modules shared `types.ts` / `cards.ts` too
+tightly to split further while keeping tests green), with the in‑game UI
+reduced to a placeholder in the interim. Phases F, G and H then shipped
+separately. The full‑game Playwright E2E in Phase G is deferred — the
+five‑bot simulation (`simulate.spec.ts`) plus the chromium `host.svelte.spec`
+game‑to‑completion test cover the engine/host path, and the panels have
+component tests; a scripted one‑human UI run is still worth adding.
+
 ### Phase A — Rename & re‑brand (mechanical, logic unchanged)
 
 - [ ] `git mv src/lib/clabber src/lib/sheephead`; update every import path and

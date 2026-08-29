@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import type { Card, Seat } from '$lib/sheephead/types';
 	import { SEATS, legalMoves } from '$lib/sheephead';
 	import type { GameStore } from '$lib/repo/gameStore.svelte';
@@ -54,6 +55,17 @@
 			: null
 	);
 
+	// Shrink the table on narrow screens so nothing overflows horizontally.
+	let uiScale = $state(1);
+	onMount(() => {
+		const fit = () => (uiScale = Math.min(1, Math.max(0.62, window.innerWidth / 780)));
+		fit();
+		window.addEventListener('resize', fit);
+		return () => window.removeEventListener('resize', fit);
+	});
+	const fanH = $derived(Math.round(54 * uiScale));
+	const handH = $derived(Math.round(104 * uiScale));
+
 	let burySel = $state<Card[]>([]);
 	// Reset the bury selection whenever a new hand's bury begins.
 	$effect(() => {
@@ -79,12 +91,39 @@
 	}
 
 	const iAmPicker = $derived(mySeat != null && mySeat === doc?.picker);
+	const iLost = $derived(
+		!!doc && doc.phase === 'gameOver' && mySeat != null && doc.score.tally[mySeat] < 0
+	);
+
+	/** A spoken summary of what the local player should do or has just seen. */
+	const announcement = $derived.by(() => {
+		if (!doc || mySeat == null) return '';
+		if (doc.phase === 'picking' && activeSeat === mySeat)
+			return 'Your turn: pick up the blind or pass.';
+		if (doc.phase === 'bury' && iAmPicker) return 'Bury two cards.';
+		if (doc.phase === 'callPartner' && iAmPicker) return 'Choose a partner.';
+		if (doc.phase === 'trick' && activeSeat === mySeat) return 'Your turn to play a card.';
+		if (doc.phase === 'handScored') {
+			const r = doc.score.hands.at(-1);
+			return r ? `Hand scored: ${r.outcome}. You are now at ${doc.score.tally[mySeat]}.` : '';
+		}
+		if (doc.phase === 'gameOver') {
+			const s = doc.score.tally[mySeat];
+			return s > 0
+				? `Game over. You finished up ${s}.`
+				: s < 0
+					? `Game over. You finished down ${s}.`
+					: 'Game over. You finished even.';
+		}
+		return '';
+	});
 </script>
 
 {#if doc}
-	<div class="wrap">
+	<div class="wrap" class:lost={iLost}>
 		<div class="absolute top-2 left-2 z-30"><LeaveButton {onleave} /></div>
 		<Scoreboard {doc} {nameOf} onnext={nextHand} />
+		<p class="sr-only" aria-live="polite">{announcement}</p>
 
 		<div class="table-grid">
 			{#each SEATS as seat (seat)}
@@ -103,7 +142,7 @@
 							tricks={doc.tricksWon[seat]?.length ?? 0}
 						/>
 						{#if seat !== mySeat}
-							<CardFan count={doc.hands[seat]?.length ?? 0} />
+							<CardFan count={doc.hands[seat]?.length ?? 0} height={fanH} />
 						{/if}
 					</div>
 				</div>
@@ -139,6 +178,7 @@
 				<MyHand
 					cards={doc.hands[mySeat]}
 					legal={myLegal}
+					height={handH}
 					selectable={doc.phase === 'bury' && iAmPicker}
 					selected={burySel}
 					onplay={play}
@@ -148,8 +188,8 @@
 		</div>
 
 		<LogFeed log={doc.log} players={doc.players} />
-		{#if doc.phase === 'gameOver'}<GameOver {store} />{/if}
 	</div>
+	{#if doc.phase === 'gameOver'}<GameOver {store} />{/if}
 {/if}
 
 <style>
@@ -162,6 +202,21 @@
 		min-height: 100vh;
 		padding: 3rem 1rem 1rem;
 		background: #0a5c36;
+		transition: filter 1s;
+	}
+	.wrap.lost {
+		filter: saturate(0.3) brightness(0.85);
+	}
+	.sr-only {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		padding: 0;
+		margin: -1px;
+		overflow: hidden;
+		clip: rect(0 0 0 0);
+		white-space: nowrap;
+		border: 0;
 	}
 	.table-grid {
 		display: grid;

@@ -6,6 +6,7 @@
 	let {
 		cards,
 		legal = null,
+		height = 104,
 		selectable = false,
 		selected = [],
 		onplay,
@@ -14,6 +15,7 @@
 		cards: CardT[];
 		/** When non-null, only these cards are playable; the rest are dimmed. */
 		legal?: CardT[] | null;
+		height?: number;
 		/** Bury mode: cards toggle-select instead of playing. */
 		selectable?: boolean;
 		selected?: CardT[];
@@ -23,9 +25,23 @@
 
 	const ordered = $derived(sortHand(cards));
 	const canPlay = (c: CardT) => (legal ? legal.includes(c) : false);
+
+	let root = $state<HTMLDivElement>();
+	let focusedFor = '';
+	// When your turn starts (a fresh set of legal cards), move focus to the
+	// first one — but only once per turn, so we don't steal focus repeatedly.
+	$effect(() => {
+		const key = legal ? legal.join(',') : '';
+		if (key && key !== focusedFor) {
+			focusedFor = key;
+			root?.querySelector<HTMLButtonElement>('button:not(:disabled)')?.focus();
+		} else if (!key) {
+			focusedFor = '';
+		}
+	});
 </script>
 
-<div class="hand" role="group" aria-label="your hand">
+<div class="hand" role="group" aria-label="your hand" bind:this={root}>
 	{#each ordered as c (c)}
 		<button
 			class="slot"
@@ -36,7 +52,7 @@
 			onclick={() => (selectable ? ontoggle?.(c) : onplay?.(c))}
 			aria-pressed={selectable ? selected.includes(c) : undefined}
 		>
-			<Card card={c} height={104} />
+			<Card card={c} {height} />
 		</button>
 	{/each}
 </div>
