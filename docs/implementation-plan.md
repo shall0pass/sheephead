@@ -643,15 +643,26 @@ path and the panels have component tests, but a browser run of the actual
 - [ ] **Deferred to Phase I:** an actual `docker compose up --build` /
       `wrangler pages dev` smoke run since the rename.
 
-### Phase I — E2E & deploy verification (open)
+### Phase I — E2E & deploy verification — mostly done (`<this commit>`)
 
-- [ ] Full‑game Playwright E2E through the real `Table` UI: one scripted human + four host bots, from the join screen to `gameOver`, asserting the
-      phase transitions and a zero‑sum final tally. Reuse the deleted Clabber
-      E2E as a starting point (`git show 292edc8~1 -- <old e2e path>`).
-- [ ] `docker compose up --build` — web on `:8080`, sync on `:3030`; create a
-      game in one browser, join by code in another, deal, watch bots play.
-- [ ] `wrangler pages dev` against the public relay — same smoke path.
-- [ ] Update `docs/deploy-cloudflare.md` if anything drifted.
+- [x] Full‑game integration test through the real `Table` UI:
+      `Table.svelte.spec.ts` (chromium) seats one "human" (seat 0) and clicks
+      the rendered controls — Pick, bury two cards + Bury, **Go alone**, then
+      one legal hand card per trick — while the `Host` drives the other four
+      seats. Runs `handsToPlay = 2` from the deal to `gameOver`, asserting two
+      scored hands, a zero‑sum tally, and the "Play again" button. (This is a
+      `vitest-browser-svelte` test, not a standalone `@playwright/test`
+      project — the repo has no dev‑server E2E harness and adding one is more
+      than this buys.)
+- [x] `docker compose config` validates; contexts, ports and the
+      `PUBLIC_SYNC_URL` build arg are correct and the project namespace is
+      `sheephead`. `sync-server/server.mjs` and `functions/games/[code].js`
+      pass `node --check`.
+- [ ] A live `docker compose up --build` (two browsers: create → join by code →
+      deal → watch bots) — not run in this environment (pulls base images).
+- [ ] `wrangler pages dev` against the public relay — not run (needs the CDN
+      relay + wrangler auth).
+- [ ] Manual 4‑real‑device smoke test — for the operator.
 
 ---
 
@@ -675,7 +686,7 @@ path and the panels have component tests, but a browser run of the actual
 
 - **Game length / "winning team".** The §8.6 open choice — fixed hand count vs
   target score vs timed — needs a stakeholder decision. v1 ships the fixed hand
-  count.
+  count. **4 hands constitute one full game.**
 - **All‑pass resolution.** `artifacts/game_rules.md` says the hand "becomes a
   leaster, or depending how you play, a doubler" — it never mentions a re‑deal.
   v1 uses a same‑dealer re‑deal purely as a neutral placeholder so the deferred
